@@ -1,0 +1,151 @@
+
+	So this talk is called "How to Fail at Background Jobs"
+	And it this is probably the hardest talk I've ever put together, because there are just so many ways to to fail.
+	
+	So as any good software developer would do. Let's iterate. Let's just start with a minimum viable product. Let's start with "How to Fail at shipping built in support with Background Jobs in Rails 4"
+	
+	I'm no insider, my main source of information is just the comments on this commit:
+		https://github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb
+	
+	But in summary:
+		1. Fail at the API
+			the rails 4 Q API at that point in time looked like this:
+				Rails.q[:qu_name] << JobClass
+			the problem with this it he name of the Q
+				developers don't know what to name their Qs
+				this is really an operations concern
+				the q name matters if you:
+					1. have the ability to prioritize jobs based on q name
+					2. have the ability to scale (up our down) your q system based on q name
+					3. want to see what your Q system is busy doing (which you would likely do based on Q name)
+							
+		2. Fail at marshalling.
+			Running things in the background often means running them in another process. This means persisting the intended work in some way beyond in-memory ruby objects. The common approach is JSON, but rails for some reason picked ruby marshall.
+		
+		3. Fail at solving the problem
+			It seems one of the major goals of the Rails 4 Q is to always send e-mails in the background. Now we could debate whether action_mailer really belongs as part of a Model-View-Controller framework in the first place, but I digress.
+			Let me re-word that a bit:
+			One of the major goals of Rails 4 Q is to ensure that the sending of e-mails does not adversely impact web response time.
+
+			So in my experience, this sort of thing is done using a background jobs system like Resque, and you make a job that sends your e-mail. But we can do better than that, we don't need a background job system if we can just make our web application server do the work after it's completed sending the response to the client.
+			
+			To demonstrate my point, here's some hacked up code that demonstrates a way to implement this feature in the ugliest way possible. Please do not try this in production.
+
+			Example using thin: https://gist.github.com/jacobo/5164180
+
+			Example using unicorn: https://gist.github.com/jacobo/5164192
+			
+			Example using threads: https://gist.github.com/jacobo/5166213
+			
+			Example using celluloid: https://gist.github.com/jacobo/5166308
+	
+	5?
+	Marshalling sucks. Marshalling active record objects can lead to processing stale data.
+
+		2. Fail at the integration
+			there were problems with getting Resque and Sidekiq integrated with rails implementation. The problems were solvable, but it showed that the abstraction that rails 4 was trying to create was leaky. And as you can probably guess, this isn't the first of last time that someone will try to make an abstraction and fail. TODO: get a good example of where the abstraction broke down. Hopefully those involved have learned the appropriate lessons that they might succeed on the next try.
+
+
+	First, let's talk about Rails 4. When I proposed this talk there was an implementation of background jobs being worked on in Rails master and slated to be released as part of Rails 4.  Recently rails core decided that feature was "not ready", and so it won't be a part of the initial Rails 4. release.
+	
+	Not abandoned, just not ready. So let's start with the problems of
+
+
+	The problem with problems is that it's too easy to confuse them with the solution. In fact we often jump to solutions when trying to describe problems.  And I'm definitely guilty of that with background jobs.  But I don't have time to talk about all the solutions. If we can focus and agree on the problems first without thinking about the solutions, then we can more accurately decide if a given solution is actually a solution.  Now I am going to talk about my experiences. And those experiences obviously involve solutions. But that doesn't meant I advocate those solutions now!
+		
+	So the problems are:
+	
+		Premature Abstraction
+			
+
+		Operations vs. Development 
+			
+
+		Track-ability and Reliability
+		
+				
+
+	I have a disease:
+		Premature Abstraction
+	
+	
+	sidekiq will retry jobs by default
+		do other Q systems do this? no?
+		which is the correct thing to do?
+		
+		look up sidekiq middleware!
+		
+	e-mail mike?
+	e-mail tony?
+	
+	also, there's:
+		https://github.com/brandonhilkert/sucker_punch
+
+	initial Q commit https://github.com/rails/rails/commit/adff4a706a5d7ad18ef05303461e1a0d848bd662
+
+
+trackable jobs
+	the drama from abstracting it to doing it yourself
+
+currently saved off in branch:
+	https://github.com/rails/rails/commits/jobs
+
+commit where jobs was reverted (read the comments)
+	https://github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb
+
+complete sidetrack:
+	https://github.com/seancribbs/webmachine-ruby
+
+
+Resque issue about defining a resque specification:
+	https://github.com/defunkt/resque/issues/709
+
+Viaduct::Runner !
+
+	April 4-5
+
+	venue:
+		http://www.casamonica.com/contact/
+	
+	speaker's dinner for Wednesday April 3rd at 7:00
+	
+	The talks are scheduled for 45mins but that includes setup and questions. We would expect the talks to run about 30-35mins
+	
+
+	the python equivalent:
+		https://github.com/celery/celery
+	
+  ResQ 2
+    threaded or forked worker?
+      based on the job?
+    implementing a Q class
+      abstract the redis stuff out
+      https://github.com/defunkt/resque/tree/consumers
+    use the newer better redis commands (using blpop)
+      blocking pop, more efficient
+    Aaron Patterson:
+      against multiple backends (other than redis)
+        because of the variation (like postgres transaction)
+          might be out of scope just because of the work it would take
+      heroku uses:
+        https://github.com/ryandotsmith/queue_classic
+    Durable Qs in ResQ
+
+    want to extract resQ web from resQ
+      pie in the sky: support multiple backends
+
+  sidekiq has job middleware
+
+  AWSM's use of 'instrument' and 'operation' to wrap jobs
+
+  Apache thing:
+    https://github.com/acrosa/kafka-rb
+
+  Treehouse (Aaron treehouse) uses:
+    https://github.com/duwanis/timberline
+
+  Rails 4 Q api has been yanked
+    https://github.com/rails/rails/tree/jobs
+    look for the discussion about it
+    
+https://twitter.com/hgmnz/status/311892710682415105

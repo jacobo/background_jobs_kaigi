@@ -13,6 +13,11 @@
 .notes We're always iterating. We're always saying "this old code sucks", let's make it better. And the more time we spend fixing it the more we discover about all of ways in which it sucks.
 
 !SLIDE
+#Should our jobs need a connection to the database?
+
+http://www.iron.io/worker doesn't think so
+
+!SLIDE
 # Resque sucks
 
 1. Try to decouple ourselves as much as possible from Resque so that when we find a better solution, it's easy to switch.
@@ -59,6 +64,44 @@ Or we could have written the abstraction ourselves:
 
 ... and then our test framework at the time wasn't running the Resque hook chain
 
+#Mocking Resque the wrong way
+
+    @@@ruby
+    module Resque
+      def self.enable_mock!
+        def self.enqueue(performer, *args)
+          performer.perform(*(decode(encode(args))))
+        end
+      end
+    end
+
+#Slightly better, still wrong
+
+  module Resque
+    def self.enable_mock!
+
+      alias_method :orig_enqueue, :enqueue
+      def self.enqueue(performer, *args)
+        orig_enqueue(performer, *args)
+        run_one_job
+      end
+
+      def self.run_one_job
+        worker = Resque::Worker.new("*")
+        if job = worker.reserve
+          job.perform
+        end
+      end
+    end
+  end
+
+#The right way
+
+Resque.inline = true
+
+
+!SLIDE
+#Another attempt at an abstraction layer
 
 https://github.com/jacobo/async
 
