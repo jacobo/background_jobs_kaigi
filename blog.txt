@@ -1,0 +1,81 @@
+What happened to the Rails 4 Queue API
+
+The Queue API in Rails 4 is supposed to be an abstraction layer for background processing. It should to ship with a basic implementation, but developers are expected to swap out the default backend with something more production ready like Resque(https://github.com/defunkt/resque) or Sidekiq(http://mperham.github.com/sidekiq/). This standardization should then allow rails plug-in (and rails itself) to perform work asynchronously where it makes sense without having to worry about the underlying mechanism.
+
+In preparation for my talk titled "How to fail at Background Jobs", I've been following activity on the Rails 4 Queue API. (Or, at this point, the lack thereof) Recently, the Queue API was removed from the master branch, and pushed off until Rails 4.1 at the earliest.
+
+What follows is my third party attempt to report on why. My main source of information is this commit on github: https://github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb , but I'll also attempt to draw some conclusions based on my own experience with Queueing systems.
+
+Another interesting source of information comes in the comments with the very first commit to add a Queueing API to Rails: https://github.com/rails/rails/commit/adff4a706a5d7ad18ef05303461e1a0d848bd662
+
+Basically, I see three failures with the Queue API as currently implemented in the "jobs" branch:
+https://github.com/rails/rails/tree/jobs
+
+1. The API
+
+The API as implemented is a "nice idea", but's actually very un-rails-like when compared to things like ActiveRecord.
+
+Here's an example of enqueuing a job in the existing implementation:
+
+  class SignupNotification
+
+    def initialize(user)
+      @user.user
+    end
+
+    def run
+      puts "Notifying #{@user.name}..."
+    end
+
+  end
+
+  Rails.queue[:important_jobs].push(SignupNotification.new(user))
+
+A more Rails-like version might look like this:
+
+  class SignupNotification
+    connect_to_queue :important_jobs
+
+    def run(user_id)
+      user = User.find(user_id)
+      puts "Notifying #{@user.name}..."
+    end
+
+  end
+
+  SignupNotification.async.run(user.id)
+
+This is better because the name of the queue should be a concern of the Job (not the place that enqueued it). Imagine if you wanted to change the Queue name, you'd have to change every enqueue-ing place to reference the new name.
+
+Also, notice we have to do a little extra work in our implementation of run to fetch the user by ID instead of having our queuing system Marshall it for us. This leads me to the next failure...
+
+2. Marshall vs. JSON
+
+Nearly every queuing system is setup so that enqueued work will be processed in an entirely separate thread and process. This means that all the information need to run the job needs to be serialized into some intermediary format. The most simplest choice for doing this would seem to be Ruby's built in Marshall. Rails took the approach of Marshalling an entire job class, while most other libraries use serialize the job arguments and job class name to JSON. Additionally, it's a best practice in most other systems to store as little information as possible information about the job in the queue itself. A queue is an ordering system, information should be stored in a database.
+
+The Marshall approach is a slightly nicer API for the developer, but quickly breaks down in practice. Care must be taken not to Marshall objects with too many relationships to other objects or Procs (which cannot be Marshalled in Ruby unless you are using the niche implementation: MagLev).
+
+Finally, we must consider the Operations concerns. Monitoring a running Queue system in production is much easier when you can easily inspect the contents of jobs. JSON is a much more portable format.
+
+3. Solving the Wrong Problem
+
+It seems one of the major goals of the Rails 4 Q is to always send e-mails in the background. Now we could debate whether action_mailer really belongs as part of a Model-View-Controller framework in the first place, but I digress.
+
+Let me re-word that a bit:
+One of the major goals of Rails 4 Q is to ensure that the sending of e-mails does not adversely impact web response time.
+
+So in my experience, this sort of thing is done using a background jobs system like Resque, and you make a job that sends your e-mail. But we can do better than that, we don't need a background job system if we can just make our web application server do the work after it's completed sending the response to the client.
+
+To demonstrate my point, here's some hacked up code that demonstrates a way to implement this feature in the ugliest way possible. Please do not try this in production.
+
+Example using thin: https://gist.github.com/jacobo/5164180
+
+Example using unicorn: https://gist.github.com/jacobo/5164192
+
+You could use threads
+
+Example: https://gist.github.com/jacobo/5166213
+
+In Conclusion
+
+I'm hoping to see the discussion continue. Maybe there's even an opportunity for other community members to step up and propose ideas about what the Rails 4 Queue API should look like.
