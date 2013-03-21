@@ -1,0 +1,309 @@
+
+
+So the review of Rails 4 Q leads to the question of what's in scope for Rails Messaging
+
+Which leads to the question of what's in scope for this presentation
+
+And I'm afraid there are far too many things that we just don't have time for
+
+So here's what I think I might have time left to cover:
+
+  Reliability: How much do you trust you Queing system?
+
+  Maybe the ideal Q system would provide an API like this?
+
+    class MyJob
+      idempotent true
+      priority :medium
+      retriable true
+      timeout_before_failure 10.minutes
+      report_timeouts_to_airbrake false
+      timeout_before_retry 30.minutes
+      max_retries 10
+      unique_constraint lambda{|args| args }
+      lock_based_on lambda{|args| args.first }
+
+A summary of message Qs
+
+  https://github.com/kookster/activemessaging
+
+Job tracking:
+    
+
+Choosing the right layer:
+    (picture of the layers and what you might put at each layer)
+
+    premature abstraction with lots of resque plugins
+
+    build on top of thing with my own enQ-ing DSL
+
+Reliability:
+    if a workers crashes will messages be retried
+      examples:
+        sidekiq sometimes depending on the type of crash, sidekiq Pro more often
+        maybe there are some resque extensions for this?
+        RabbitMQ (if using acks)
+
+    if the message Q crashes will the system continue to function without dropping any jobs
+      (assumes the message Q runs on multiple boxes)
+
+      examples:
+        RabbitMQ (if using durable Qs and durable messages)
+        maybe? ActiveMQ?
+        maybe? Q classic + postgres?
+        maybe? redis based Qs with slaves?
+
+  OR
+    maybe you don't rely on your Q being reliable:
+
+      database table called invoice_processing_tasks
+        with state
+        enQ invoice_processing_tasks
+        periodically (maybe even manually?) check for old tasks that havn't processed
+          OR, even have a cron that checks for them and re-enQs them
+        make your tasks idempotent so that if re-run they no-op
+  
+... and then our test framework at the time wasn't running the Resque hook chain
+
+#Mocking Resque the wrong way
+
+    @@@ruby
+    module Resque
+      def self.enable_mock!
+        def self.enqueue(performer, *args)
+          performer.perform(*(decode(encode(args))))
+        end
+      end
+    end
+
+#Slightly better, still wrong
+
+  module Resque
+    def self.enable_mock!
+
+      alias_method :orig_enqueue, :enqueue
+      def self.enqueue(performer, *args)
+        orig_enqueue(performer, *args)
+        run_one_job
+      end
+
+      def self.run_one_job
+        worker = Resque::Worker.new("*")
+        if job = worker.reserve
+          job.perform
+        end
+      end
+    end
+  end
+
+#The right way
+
+Resque.inline = true
+
+
+
+!SLIDE
+### Jacob Burkhart
+<br/><br/><br/><br/>
+<br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
+## @beanstalksurf
+
+!SLIDE[bg=pictures/engineyard.png]
+# &nbsp;&nbsp;&nbsp; Engine Yard
+
+!SLIDE
+### How to Fail at Background Jobs
+
+<br/><br/><br/><br/><br/><br/><br/>
+
+## `jacobo.github.com/background_jobs`
+
+!SLIDE
+### About Failure
+
+!SLIDE
+# How to Fail at shipping built in support with Background Jobs in Rails 4
+
+!SLIDE
+# Fail at the API
+
+!SLIDE
+# Fail at Marshaling
+
+!SLIDE
+# Solving the wrong problem
+
+Are we trying to:
+
+Provide a standard abstraction for all queing systems that integrate with Rails
+OR
+Make sure that sending e-mail does not interfere with web response times
+
+!SLIDE
+### A story about Digital Oral Scanning
+
+(and premature optimization)
+
+(in 2008?)
+(before resque)
+
+First commit to my AMQP stuff: Aug 24, 2009
+First commit to Resque: Aug 11, 2009
+
+"We're going to process thousands of scans a day" (TODO: ask rajiv if he can remember a real number)
+
+
+
+
+!SLIDE
+So we had this problem...
+(screenshot of server booting, just spinning, forever)
+
+So usually it could be tracked back to a hung job just sitting in resque forever
+
+So of course we added timeouts and continually tied to fix the problem
+
+But we also acknowledged that our Queuing system is unreliable
+
+.notes We're always iterating. We're always saying "this old code sucks", let's make it better. And the more time we spend fixing it the more we discover about all of ways in which it sucks. So to that end, I we thought: maybe we should be prepared to extract work that we are doing in background jobs to a different App right?
+
+!SLIDE
+#Should our jobs need a connection to the database?
+
+http://www.iron.io/worker doesn't think so
+
+!SLIDE
+# Resque sucks
+
+1. Try to decouple ourselves as much as possible from Resque so that when we find a better solution, it's easy to switch.
+
+2. Try to make Resque better. (Which means building more abstractions into Resque and thus coupling ourselves to it more)
+
+!SLIDE
+We coupled ourselves to resque:
+https://github.com/engineyard/resque-unique-job
+
+    @@@ ruby
+    class SSOCaching
+      extend Resque::Plugins::UniqueJob
+      @unique = true
+
+      def self.perform(key)
+        EY::SSO::User.get(key).reload!
+      end
+    end
+
+    Resque.enqueue SSOCaching, 123
+
+It might have been better to couple ourselves to the "eventually-will-exist" Rails Q API
+
+Or use some other "abstraction on to top Resque", or write our own.
+
+Or we could have written the abstraction ourselves:
+
+    @@@ ruby
+    class SSOCaching
+      def self.enqueue(key)
+        if UniqueJob.aquire_lock("SSOCaching#{key}")
+          Resque.enqueue SSOCaching, key
+        end
+      end
+
+      def self.perform(key)
+        UniqueJob.release_lock!("SSOCaching#{key}")
+        EY::SSO::User.get(key).reload!
+      end
+    end
+
+    SSOCaching.enqueue 123
+
+
+
+!SLIDE
+#Another attempt at an abstraction layer
+
+https://github.com/jacobo/async
+
+!SLIDE
+# Fail at Reliability
+
+Choices:
+  - failover/redundancy
+  - inspectable Q backlog
+  - both?
+  - neither?
+
+.notes Do we decide we need a set of features and look for a tool, or do look at possible tools and compare features?
+
+#when Idempotent isn't really idempotent
+
+!SLIDE
+# Premature Reliability (like Premature Optimization)
+
+Workling, first commit in: Oct 17, 2008
+https://github.com/purzelrakete/workling
+https://github.com/elecnix/workling
+
+you read these twitter blogs...
+https://github.com/starling/starling
+
+!SLIDE
+### Enterprise Message Qs
+
+clustering, failover
+
+TODO: what's the name of that unix daemon for reliable messaging?
+
+So then I come to Engine Yard
+
+And the messaging server crashing is the least of our concerns
+
+Before I'd ever heard of zeroMQ:
+  there was Spread:
+  http://www.spread.org/index.html
+
+!SLIDE
+### Reliable Messaging
+
+!SLIDE
+### Resque at Engine Yard
+
+!SLIDE
+### Job Failures
+
+!SLIDE
+### The abstraction paradox
+
+On one side, we think "the message Q should do everything for us", and so we write resque plugins
+
+http://rubygems.org/search?utf8=%E2%9C%93&query=resque
+
+Displaying gems 1 - 30 of 213 in total
+
+We did this in AWSM and ended up with resque lockin
+
+And testing Sucked!
+
+But it was really just me "failing at background jobs"
+
+(code snippet of complicated resQ mock)
+
+Should probably get Josh to explain Resque.inline
+
+#Even the author of resque, doesn't always use resque!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

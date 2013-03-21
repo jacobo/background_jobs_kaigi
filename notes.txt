@@ -1,4 +1,11 @@
 
+Evan says: supporting EY customers, delayed job tends to kill their database
+  because it uses locks
+  but maybe Q-classic doesn't?
+
+TODO: does rabbitMQ let you look at the running Q
+  does it let you delete jobs or flush the Q?
+
 	So this talk is called "How to Fail at Background Jobs"
 	And it this is probably the hardest talk I've ever put together, because there are just so many ways to to fail.
 	
