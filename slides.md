@@ -12,12 +12,10 @@
 !SLIDE
 ### Failure
 
-<br/><br/>
-<br/><br/>
-
-# Mostly involving Resque
-
 .notes Failure is a good thing
+
+!SLIDE
+# I want to spark conversations
 
 !SLIDE
 ### How to Fail at Background Jobs
@@ -70,6 +68,10 @@
       headers["Content-Length"] = body.map(&:bytesize).sum
       [status, headers, BodyProxy.new(body)]
     end
+
+!SLIDE
+### Maybe Rails 4 Q should be more like Rack
+(link to pull request)
 
 !SLIDE
 ### But enough about other people's failures...
@@ -214,31 +216,17 @@
 .notes How many of you have said/thought "I can fix background jobs so they don't suck". How many of you have failed? Given up? Because even if you succeed, you still have this monumental task of getting everybody else to use your solution.
 
 !SLIDE
-### XMPP can be a distributed message Queue
+### Reliable Messaging might be a solution.
 
-!SLIDE
-### If you add it yourself...
-
-    @@@ perl
-      my($mailbox, $private_group) = Spread::connect(
-        spread_name => '4444@host.domain.com');
-
-      Spread::multicast($mbox, SAFE_MESS, @joined_groups,
-        0, "Important Message");
-
-`search.cpan.org/~jesus/Spread-3.17.4.4/Spread.pm`
-
-`www.spread.org/docs/spread_docs_4/docs/message_types.html`
-
-`rbspread.sourceforge.net`
-
-!SLIDE
-### Reliable Messaging isn't generally a problem. Reliable Execution is.
+### Reliable Execution is usually the problem.
 
 .notes so we made sore rabbit was sending and handling messages reliably because we were told this is a feature of rabbit. not because it's something we thought we needed.  In my experience, generally you have many more problems with message execution, than you do with message delivery.
 
 !SLIDE
-### Let's talk about EC2
+### Let's talk about Trains
+
+!SLIDE
+### Boot an EC2 Server
 
     @@@ ruby
     class InstanceProvision
@@ -275,7 +263,7 @@
 ### Make a Resque Plugin
 
 !SLIDE
-### More advanced Resque Plugin
+### Make another Resque Plugin
 
 !SLIDE
 ### But now we can't upgrade to sidekiq
@@ -304,17 +292,37 @@
 ### Even Resque maintainers don't always use Resque
 
 !SLIDE
+### Work abstractions libraries (and thus Rails 4 Q) should be more like Rack
+
+!SLIDE
 # Conclusions?
 
 !SLIDE
 # Pick the right tool for the job?
-# BUT maintaining a massive polyglot of similar tools is annoying too!
+# BUT maintaining a massive polyglot of tools is annoying too!
 
 !SLIDE
 # Understand your tradeoffs?
 
 !SLIDE
 # Know where you fail and compensate for it?
+
+
+!SLIDE
+### BONUS: You *could* add reliable messaging to anything...
+
+    @@@ perl
+      my($mailbox, $private_group) = Spread::connect(
+        spread_name => '4444@host.domain.com');
+
+      Spread::multicast($mbox, SAFE_MESS, @joined_groups,
+        0, "Important Message");
+
+`search.cpan.org/~jesus/Spread-3.17.4.4/Spread.pm`
+
+`www.spread.org/docs/spread_docs_4/docs/message_types.html`
+
+`rbspread.sourceforge.net`
 
 !SLIDE
 # Questions?
