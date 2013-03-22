@@ -296,6 +296,32 @@ Should probably get Josh to explain Resque.inline
 https://gist.github.com/mkb/4760712
 
 
+!SLIDE
+### AMQP: Failover
+
+    @@@ ruby
+    def self.determine_reconnect_server(opts)
+      try_host = opts[:host]
+      try_port = opts[:port]
+      @retry_count ||= 0
+      if opts[:max_retry] && @retry_count >= opts[:max_retry]
+        raise "max_retry (#{@retry_count}) reached, disconnecting"
+      end
+      if srv_list = opts[:fallback_servers]
+        @server_to_select ||= 0
+        idex = @server_to_select % (srv_list.size + 1)
+        if idex != 0
+          try = srv_list[idex - 1]
+          try_host = try[:host] || AMQP.settings[:host]
+          try_port = try[:port] || AMQP.settings[:port]
+        end
+        @server_to_select += 1
+      end      
+      @retry_count += 1
+      [try_host, try_port]
+    end
+
+.notes https://github.com/brontes3d/amqp/blob/master/lib/amqp/client.rb#L215
 
 
 

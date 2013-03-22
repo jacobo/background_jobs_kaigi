@@ -125,6 +125,7 @@
 
 .notes http://www.rabbitmq.com/
 .notes "Robust" only when you setup your queues and topics and exchanges correctly, and set them to be durable, and send durable messages, and send acks.
+.notes so we made sore rabbit was sending and handling messages reliably because we were told this is a feature of rabbit. not because it's something we thought we needed.  In my experience, generally you have many more problems with message execution, than you do with message delivery.
 
 !SLIDE[bg=images/worklingrunners.png]
 &nbsp;
@@ -136,26 +137,7 @@
 ### Square Hole.
 
 !SLIDE
-### All you need is Daemons
-
-    @@@ ruby
-    require 'daemons'
-
-    options = {
-      :app_name => "worker",
-      :log_output => true,
-      :backtrace => true,
-      :dir_mode => :normal,
-      :dir => File.expand_path('../../tmp/pids',  __FILE__),
-      :log_dir => File.expand_path('../../log',  __FILE__),
-      :multiple => true,
-      :monitor => true
-    }
-
-    Daemons.run(File.expand_path('../worker',  __FILE__), options)
-
-!SLIDE
-### Do it Yourself
+### So Do it Yourself
 
     @@@ ruby
     class CaseFilesCopier < AmqpListener::Listener
@@ -211,11 +193,143 @@
 .notes How many of you have said/thought "I can fix background jobs so they don't suck". How many of you have failed? Given up? Because even if you succeed, you still have this monumental task of getting everybody else to use your solution.
 
 !SLIDE
-### Reliable Messaging might be a solution.
+### Daemons
 
-### Reliable Execution is usually the problem.
+    @@@ ruby
+    require 'daemons'
 
-.notes so we made sore rabbit was sending and handling messages reliably because we were told this is a feature of rabbit. not because it's something we thought we needed.  In my experience, generally you have many more problems with message execution, than you do with message delivery.
+    options = {
+      :app_name => "worker",
+      :log_output => true,
+      :backtrace => true,
+      :dir_mode => :normal,
+      :dir => File.expand_path('../../tmp/pids',  __FILE__),
+      :log_dir => File.expand_path('../../log',  __FILE__),
+      :multiple => true,
+      :monitor => true
+    }
+
+    Daemons.run(File.expand_path('../worker',  __FILE__), options)
+
+# `daemons.rubyforge.org`
+
+!SLIDE
+### Or God?
+
+    @@@ ruby
+    5.times do |n|
+      God.watch do |w|
+        w.name     = "resque-#{num}"
+        w.group    = 'resque'
+        w.interval = 30.seconds
+        w.log      = "#{app_root}/log/worker.#{num}.log"
+        w.dir      = app_root
+        w.env      = {
+          "GOD_WATCH"   => w.name,
+          "QUEUE"       => '*'
+        }
+        w.start    = "bundle exec rake --trace resque:work"
+      ...
+
+# `godrb.com`
+
+!SLIDE
+### Or Torquebox?
+
+![](images/torquebox.jpg)
+
+# `torquebox.org`
+
+!SLIDE[bg=images/chris.jpg]
+&nbsp;
+
+!SLIDE
+### Event loops
+
+    @@@ ruby
+    require 'eventmachine'
+    EM.run {
+      EM.start_server(host, port, self)
+    }
+    EM.next_tick{ puts "do something" }
+
+    cli = Sidekiq::CLI.instance
+    cli.parse
+    cli.run
+
+
+!SLIDE
+### Event Machine
+
+    @@@ C
+    void EventMachine_t::Run()
+      //Epoll and Kqueue stuff..
+      ...
+
+      while (true) {
+        _UpdateTime();
+        _RunTimers();
+
+        _AddNewDescriptors();
+        _ModifyDescriptors();
+
+        _RunOnce();
+        if (bTerminateSignalReceived)
+          break;
+      }
+    }
+
+<h2><pre>
+github.com/eventmachine/eventmachine/
+blob/master/ext/em.cpp#L435
+</pre></h2>
+
+!SLIDE
+### Resque
+
+    @@@ ruby
+    def work(interval = 5, &block)
+      loop do
+        run_hook :before_fork, job
+
+        if @child = fork
+          procline "Forked #{@child} at #{Time.now.to_i}"
+          Process.wait
+        else
+          procline "Processing #{job.queue} since #{Time.now.to_i}"
+          perform(job, &block)
+          exit! unless @cant_fork
+        end
+      end
+
+<h2><pre>
+github.com/defunkt/resque/
+blob/master/lib/resque/worker.rb#L120
+</pre></h2>
+
+!SLIDE
+### Celluloid / Sidekiq
+
+    @@@ ruby
+    class Sidekiq::Manager
+      include Celluloid
+      ???
+
+    class Sidekiq::Fetcher
+      include Celluloid
+      ???
+
+    class Sidekiq::Processor
+      include Celluloid
+      ???
+
+# `sidekiq.org`
+## `github.com/celluloid/celluloid`
+
+!SLIDE
+### How about a better event loop in Resque?
+(pull request)
+
 
 !SLIDE[bg=/images/engineyardcloud.png]
 ### Let's talk about Trains
@@ -240,6 +354,16 @@
 
         instance.attach_ip!
         ...
+
+!SLIDE
+### Extractable to another app?
+
+  Job takes no active record models as args
+
+!SLIDE
+### Just an asynchronous method call?
+
+  MethodCalling Job
 
 !SLIDE[bg=images/resquehang.png]
 &nbsp;
@@ -374,6 +498,7 @@
 
 !SLIDE
 ### Sidekiq doesn't work with all our Resque plugins!
+(picture of Jim and Ryan)
 
 !SLIDE
 ### Data belongs in a database
@@ -399,6 +524,9 @@
 # `started_at`
 # `finished_at`
 # `state`
+
+!SLIDE
+### Idempotence becomes Easier
 
 !SLIDE
 ### Async
