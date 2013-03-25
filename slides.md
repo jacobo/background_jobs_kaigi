@@ -14,6 +14,44 @@
 
 .notes Failure is a good thing. I want to spark conversations.
 
+!SLIDE
+### DRB is built-in
+
+## Queue Server
+    @@@ ruby
+    require 'drb'
+    DRb.start_service "druby://localhost:23121", []
+    DRb.thread.join
+
+## Push into the Q
+
+    @@@ ruby
+    remote_q = DRbObject.new nil, "druby://localhost:23121"
+    remote_q.push("some work")
+
+## Work it off
+    @@@ ruby
+    remote_q = DRbObject.new nil, "druby://localhost:23121"
+    while(work = remote_q.pop)
+      puts "doing #{work}"
+    end
+
+!SLIDE
+### Use it
+
+    @@@ ruby
+    m = MultiHeadedGreekMonster.new(nil, 3, 28371) do |f, w|
+      f.name = f.name + " improved"
+      f.save!
+    end
+    Face.all.each do |f|
+      monster.feed(f)
+    end
+    monster.finish
+
+`github.com/engineyard/multi_headed_greek_monster`
+
+
 !SLIDE[bg=images/skimboard.jpg]
 ### Rails 4 Queuing
 
@@ -60,26 +98,10 @@
     end
 
 !SLIDE
-### My Failed "Fix"
-
-    @@@ruby
-    def pop
-      job_data = self.encoder.decode(super)
-      job_class = job_data["payloadizer"].constantize
-      job_class.job_from_payload(job_data["payload"])
-    end
-
-    def push(job)
-      payloadizer = (job.respond_to?(:payloadizer) && 
-        job.payloadizer) || self.default_payloadizer
-      super self.encoder.encode({
-        'payloadizer' => payloadizer.unconstantize,
-        'payload' => payloadizer.payload_from_job(job)})
-    end
+### Will not be revisited until 4.1
 
 ## `github.com/rails/rails/pull/9910`
-
-.notes TODO: a pull request with "minimal background jobs system" -OR- a pull request with "all the hooks"... or both?
+## `github.com/rails/rails/pull/9924`
 
 !SLIDE[bg=images/skimboardfail.jpg]
 ### Moving on...
