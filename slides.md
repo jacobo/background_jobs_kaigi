@@ -1,22 +1,20 @@
-!SLIDE
+!SLIDE[bg=images/beanstalksurf.jpg]
 ### Jacob Burkhart
 <br/><br/><br/><br/>
 <br/><br/><br/><br/>
 <br/><br/><br/><br/><br/>
 ## @beanstalksurf
 
-!SLIDE
+!SLIDE[bg=images/distill.jpg]
 ### Engine Yard
-![](images/distill.jpg)
 
-!SLIDE
+!SLIDE[bg=images/closeout.jpg] black
 ### How to Fail at Background Jobs
-<br/><br/><br/><br/><br/><br/><br/>
 ## `jacobo.github.com/background_jobs`
 
 .notes Failure is a good thing. I want to spark conversations.
 
-!SLIDE
+!SLIDE[bg=images/skimboard.jpg]
 ### Rails 4 Queuing
 
 !SLIDE
@@ -62,13 +60,29 @@
     end
 
 !SLIDE
-### Let me try...
-(link to pull request)
+### My Failed "Fix"
+
+    @@@ruby
+    def pop
+      job_data = self.encoder.decode(super)
+      job_class = job_data["payloadizer"].constantize
+      job_class.job_from_payload(job_data["payload"])
+    end
+
+    def push(job)
+      payloadizer = (job.respond_to?(:payloadizer) && 
+        job.payloadizer) || self.default_payloadizer
+      super self.encoder.encode({
+        'payloadizer' => payloadizer.unconstantize,
+        'payload' => payloadizer.payload_from_job(job)})
+    end
+
+## `github.com/rails/rails/pull/9910`
 
 .notes TODO: a pull request with "minimal background jobs system" -OR- a pull request with "all the hooks"... or both?
 
-!SLIDE
-### But enough about other people's failures...
+!SLIDE[bg=images/skimboardfail.jpg]
+### Moving on...
 
 !SLIDE
 ### Let's talk about Teeth
@@ -90,10 +104,37 @@
 
 ## `github.com/brontes3d/tooth_numbering`
 
+.notes The theme of this section is doing it yourself. The lesson is to use the Q systems as intended and follow their best practices.
+
 !SLIDE
 ### 2009
 
 ![](images/3m-lava-chairside-oral-scanner.jpg)
+
+!SLIDE
+### XMPP
+### a.k.a. Jabber
+### a Chat protocol
+<br/>
+## `github.com/djabberd/DJabberd`
+<br/>
+## `xmpp.org/xmpp-protocols/xmpp-extensions`
+
+!SLIDE
+### Write your own clustering
+
+    @@@ perl
+      my($mailbox, $private_group) = Spread::connect(
+        spread_name => '4444@host.domain.com');
+
+      Spread::multicast($mbox, SAFE_MESS, @joined_groups,
+        0, "Important Message");
+
+`search.cpan.org/~jesus/Spread-3.17.4.4/Spread.pm`
+
+`www.spread.org/docs/spread_docs_4/docs/message_types.html`
+
+## `rbspread.sourceforge.net`
 
 !SLIDE
 ### Starling, Workling
@@ -127,14 +168,79 @@
 .notes "Robust" only when you setup your queues and topics and exchanges correctly, and set them to be durable, and send durable messages, and send acks.
 .notes so we made sore rabbit was sending and handling messages reliably because we were told this is a feature of rabbit. not because it's something we thought we needed.  In my experience, generally you have many more problems with message execution, than you do with message delivery.
 
+!SLIDE
+### AMQP
+
+    @@@ ruby
+    connection = AMQP.connect(:host => '127.0.0.1')
+
+    channel  = AMQP::Channel.new(connection)
+    queue    = channel.queue("some.q")
+    exchange = channel.default_exchange
+
+    queue.subscribe do |payload|
+      puts "Received a message: #{payload}"
+    end
+
+    exchange.publish "Hello, world!", 
+                     :routing_key => queue.name
+
+## `github.com/ruby-amqp/amqp`
+## `github.com/ruby-amqp/bunny`
+
 !SLIDE[bg=images/worklingrunners.png]
 &nbsp;
 
 .notes Brontes fork of workling at: https://github.com/brontes3d/workling
 
+!SLIDE[bg=images/bug.jpg]
+### Bug
+
 !SLIDE
-### Round Peg.
-### Square Hole.
+### ActiveRecord:: RecordNotFound
+
+    @@@ ruby
+    class Device < ActiveRecord::Base
+      after_create do |d|
+        # enqueue BackgroundJob with d.id
+      end
+    end
+
+    class BackgroundJob
+      def run(device_id)
+        Device.find(device_id)
+      end
+    end
+
+## `after_create` != `after_sql_commit`
+
+!SLIDE
+### Hack ActiveRecord
+
+    @@@ ruby
+    class Device < ActiveRecord::Base
+      after_create do |d|
+        d.commit_callback do
+          # enqueue BackgroundJob with d.id
+        end
+      end
+    end
+
+    def commit_callback
+      self.connection.instance_eval do
+        class << self
+          alias commit_db_transaction_original_for_commit_callback_hook commit_db_transaction
+          ...
+
+
+## `github.com/brontes3d/commit_callback`
+
+!SLIDE[bg=images/steep.jpg]
+### Generic abstractions are hard
+
+.notes poll vs. push
+.notes because workling controls the run loop, we couldn't easily mix with EM-based xmpp
+.notes spinning up (and down) an event machine every time you need to send a message is really crappy
 
 !SLIDE
 ### So Do it Yourself
@@ -184,13 +290,11 @@
 
 .notes https://github.com/brontes3d/amqp/blob/master/lib/amqp/client.rb#L215
 
-!SLIDE bullets incremental
-### Lessons?
+!SLIDE[bg=images/sunset.jpg]
+### Moment of Reflection
+&nbsp;
 
-* The slippery slope of: "I can fix that"
-* Open sourcing it doesn't mean anybody cares
-
-.notes How many of you have said/thought "I can fix background jobs so they don't suck". How many of you have failed? Given up? Because even if you succeed, you still have this monumental task of getting everybody else to use your solution.
+.notes stray from best practices leads to re-writing things from scratch. leads to being on an island
 
 !SLIDE
 ### Daemons
@@ -602,22 +706,6 @@ blob/master/lib/resque/worker.rb#L120
 
 !SLIDE
 # Know where you fail and compensate?
-
-!SLIDE
-### BONUS: You *could* add reliable messaging to anything...
-
-    @@@ perl
-      my($mailbox, $private_group) = Spread::connect(
-        spread_name => '4444@host.domain.com');
-
-      Spread::multicast($mbox, SAFE_MESS, @joined_groups,
-        0, "Important Message");
-
-`search.cpan.org/~jesus/Spread-3.17.4.4/Spread.pm`
-
-`www.spread.org/docs/spread_docs_4/docs/message_types.html`
-
-## `rbspread.sourceforge.net`
 
 !SLIDE
 ### BONUS: You don't always need to build a job class

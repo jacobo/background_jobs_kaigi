@@ -14,6 +14,9 @@ it would seem resque forks to make it easier to restart, maybe it makes it harde
 don't use delayed_job it kills your database
   (picture of Evan)
 
+fail at after_save
+  and created a rails plugin for THAT
+
 more time to stop and summarize
 
 show a timeline as we go?
@@ -35,3 +38,4 @@ no question marks
 
 google: Gary bernhanrt wat
 
+lookup glimpse jobs system
