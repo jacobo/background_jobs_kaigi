@@ -37,7 +37,7 @@
     end
 
 !SLIDE
-### Use it
+### Use it for migrations
 
     @@@ ruby
     m = MultiHeadedGreekMonster.new(nil, 3, 28371) do |f, w|
@@ -98,7 +98,7 @@
     end
 
 !SLIDE
-### Will not be revisited until 4.1
+### Will revisit in 4.1
 
 ## `github.com/rails/rails/pull/9910`
 ## `github.com/rails/rails/pull/9924`
@@ -107,7 +107,7 @@
 ### Moving on...
 
 !SLIDE
-### Let's talk about Teeth
+### Teeth
 
     @@@ ruby
     define_system(:us_child) do
@@ -137,10 +137,10 @@
 ### XMPP
 ### a.k.a. Jabber
 ### a Chat protocol
-<br/>
-## `github.com/djabberd/DJabberd`
-<br/>
 ## `xmpp.org/xmpp-protocols/xmpp-extensions`
+## `github.com/djabberd/DJabberd`
+## `github.com/brontes3d/xmpp4r`
+## `github.com/brontes3d/xmpp_messaging`
 
 !SLIDE
 ### Write your own clustering
@@ -216,7 +216,7 @@
 .notes Brontes fork of workling at: https://github.com/brontes3d/workling
 
 !SLIDE[bg=images/bug.jpg]
-### Bug
+### Little Bug
 
 !SLIDE
 ### ActiveRecord:: RecordNotFound
@@ -257,15 +257,19 @@
 
 ## `github.com/brontes3d/commit_callback`
 
-!SLIDE[bg=images/steep.jpg]
-### Generic abstractions are hard
+!SLIDE[bg=images/manybugs.jpg]
+### More Bugs
 
+!SLIDE[bg=images/steep.jpg]
+### Fundamental Flaw
+
+.notes generic abstractions are hard
 .notes poll vs. push
 .notes because workling controls the run loop, we couldn't easily mix with EM-based xmpp
 .notes spinning up (and down) an event machine every time you need to send a message is really crappy
 
 !SLIDE
-### So Do it Yourself
+### Do it Yourself
 
     @@@ ruby
     class CaseFilesCopier < AmqpListener::Listener
@@ -312,153 +316,20 @@
 
 .notes https://github.com/brontes3d/amqp/blob/master/lib/amqp/client.rb#L215
 
-!SLIDE[bg=images/sunset.jpg]
+!SLIDE[bg=images/sunset.jpg] align-left
 ### Moment of Reflection
-&nbsp;
+
+<br/><br/><br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/><br/>
+
+## Did the tools fail us?
+## Did we fail at using them?
 
 .notes stray from best practices leads to re-writing things from scratch. leads to being on an island
 
-!SLIDE
-### Daemons
-
-    @@@ ruby
-    require 'daemons'
-
-    options = {
-      :app_name => "worker",
-      :log_output => true,
-      :backtrace => true,
-      :dir_mode => :normal,
-      :dir => File.expand_path('../../tmp/pids',  __FILE__),
-      :log_dir => File.expand_path('../../log',  __FILE__),
-      :multiple => true,
-      :monitor => true
-    }
-
-    Daemons.run(File.expand_path('../worker',  __FILE__), options)
-
-# `daemons.rubyforge.org`
-
-!SLIDE
-### Or God?
-
-    @@@ ruby
-    5.times do |n|
-      God.watch do |w|
-        w.name     = "resque-#{num}"
-        w.group    = 'resque'
-        w.interval = 30.seconds
-        w.log      = "#{app_root}/log/worker.#{num}.log"
-        w.dir      = app_root
-        w.env      = {
-          "GOD_WATCH"   => w.name,
-          "QUEUE"       => '*'
-        }
-        w.start    = "bundle exec rake --trace resque:work"
-      ...
-
-# `godrb.com`
-
-!SLIDE
-### Or Torquebox?
-
-![](images/torquebox.jpg)
-
-# `torquebox.org`
-
-!SLIDE[bg=images/chris.jpg]
-&nbsp;
-
-!SLIDE
-### Event loops
-
-    @@@ ruby
-    require 'eventmachine'
-    EM.run {
-      EM.start_server(host, port, self)
-    }
-    EM.next_tick{ puts "do something" }
-
-    cli = Sidekiq::CLI.instance
-    cli.parse
-    cli.run
-
-
-!SLIDE
-### Event Machine
-
-    @@@ C
-    void EventMachine_t::Run()
-      //Epoll and Kqueue stuff..
-      ...
-
-      while (true) {
-        _UpdateTime();
-        _RunTimers();
-
-        _AddNewDescriptors();
-        _ModifyDescriptors();
-
-        _RunOnce();
-        if (bTerminateSignalReceived)
-          break;
-      }
-    }
-
-<h2><pre>
-github.com/eventmachine/eventmachine/
-blob/master/ext/em.cpp#L435
-</pre></h2>
-
-!SLIDE
-### Resque
-
-    @@@ ruby
-    def work(interval = 5, &block)
-      loop do
-        run_hook :before_fork, job
-
-        if @child = fork
-          procline "Forked #{@child} at #{Time.now.to_i}"
-          Process.wait
-        else
-          procline "Processing #{job.queue} since #{Time.now.to_i}"
-          perform(job, &block)
-          exit! unless @cant_fork
-        end
-      end
-
-<h2><pre>
-github.com/defunkt/resque/
-blob/master/lib/resque/worker.rb#L120
-</pre></h2>
-
-!SLIDE
-### Celluloid / Sidekiq
-
-    @@@ ruby
-    class Sidekiq::Manager
-      include Celluloid
-      ???
-
-    class Sidekiq::Fetcher
-      include Celluloid
-      ???
-
-    class Sidekiq::Processor
-      include Celluloid
-      ???
-
-# `sidekiq.org`
-## `github.com/celluloid/celluloid`
-
-!SLIDE
-### How about a better event loop in Resque?
-(pull request)
-
-
 !SLIDE[bg=/images/engineyardcloud.png]
-### Let's talk about Trains
+### Trains
+### ... and Resque
 
 !SLIDE
 ### Boot an EC2 Server
@@ -482,24 +353,76 @@ blob/master/lib/resque/worker.rb#L120
         ...
 
 !SLIDE
-### Extractable to another app?
+### Extractable?
 
-  Job takes no active record models as args
+    @@@ ruby
+    class InstanceProvision
+
+      def self.perform(aws_creds, create_params, callback_url)
+        fog = Fog::Compute.new(aws_creds)
+        server = fog.servers.create(create_params)
+        API.post(callback_url, :instance_amazon_id => server.id)
+
+        while(!server.ready?)
+          sleep 1
+          server.reload
+        end
+
+        ip = fog.ips.create!
+        ip.server = server
+        API.post(callback_url, :attached_ip_amazon_id => ip.id)
+        ...
 
 !SLIDE
-### Just an asynchronous method call?
+### Generalizable?
 
-  MethodCalling Job
+    @@@ ruby
+    class MethodCalling
+      def self.perform(class_str, method, id, *args)
+        model_class = Object.const_get(class_str)
+        model = model_class.find(id)
+        model.send(method, *args)
+      end
+    end
 
-!SLIDE[bg=images/resquehang.png]
-&nbsp;
+    class Instance
+      def provision
+        Resque.enqueue(MethodCalling, Instance, :provision!, id)
+      end
 
-.notes We would have jobs fail, and have to go in and read the code of this method body, and figure out where it failed... and try to fix it. But is the job still running? Did the job throw an exception?
+      def provision!
+        #actually do it
+      end
+    end
+
+!SLIDE
+### Async
+
+    @@@ ruby
+    require 'async'
+    require 'async/resque'
+    Async.backend = Async::ResqueBackend
+
+    class Instance < ActiveRecord::Base
+      def provision(*args)
+        Async.run{ provision_now(*args)}
+      end
+      def provision_now(*args)
+        #actually do it
+      end
+    end
+
+## `github.com/engineyard/async`
 
 !SLIDE[bg=images/instancehang.png]
 &nbsp;
 
 .notes We have customers complaining
+
+!SLIDE[bg=images/resquehang.png]
+&nbsp;
+
+.notes We would have jobs fail, and have to go in and read the code of this method body, and figure out where it failed... and try to fix it. But is the job still running? Did the job throw an exception?
 
 !SLIDE
 ### Make a Resque Plugin
@@ -529,6 +452,9 @@ blob/master/lib/resque/worker.rb#L120
 
     InstanceProvision.failed_jobs("Account:121")
 
+!SLIDE[bg=images/job_dependencies.png]
+### Jobs Dependencies
+
 !SLIDE
 ### Make another
 
@@ -549,9 +475,6 @@ blob/master/lib/resque/worker.rb#L120
             ...
 
 ## `github.com/engineyard/resque-delegation`
-
-!SLIDE
-### Too much work to refactor all those jobs...
 
 !SLIDE
 ### Desperation?
@@ -576,18 +499,14 @@ blob/master/lib/resque/worker.rb#L120
     ...
 
 !SLIDE
-### Maybe we just needed better logging?
+### Maybe we just need better logging?
+
+<h2><iframe width="640" height="360" src="http://www.youtube.com/embed/NpTT30wLL-w?rel=0" frameborder="0" allowfullscreen></iframe></h2>
+
+## `http://youtu.be/NpTT30wLL-w`
 
 !SLIDE
-### Model Everything!
-
-    @@@ ruby
-    class InstanceProvision < ActiveRecord::Base
-      ...
-      Viaduct?
-
-!SLIDE
-### Some Resque Plugins are still useful..
+### More Resque Plugins...
 
     @@@ ruby
     class MyJob
@@ -601,33 +520,11 @@ blob/master/lib/resque/worker.rb#L120
 ## `github.com/engineyard/resque-unique-job`
 
 !SLIDE
-### Celluloid loves sleeps
-
-    @@@ ruby
-    class InstanceProvision
-
-      def self.perform(instance_id)
-        instance = Instance.find(instance_id)
-
-        fog = Fog::Compute.new(...)
-        server = fog.servers.create(...)
-        instance.amazon_id = server.id
-
-        while(!server.ready?)
-          sleep 1
-          server.reload
-        end
-
-        instance.attach_ip!
-        ...
-
-
-!SLIDE
-### Sidekiq doesn't work with all our Resque plugins!
+### Sidekiq doesn't use Resque plugins
 (picture of Jim and Ryan)
 
 !SLIDE
-### Data belongs in a database
+### Data belongs in a database (not redis)
 
     @@@ ruby
     class InstanceProvision < ActiveRecord::Base
@@ -652,33 +549,182 @@ blob/master/lib/resque/worker.rb#L120
 # `state`
 
 !SLIDE
-### Idempotence becomes Easier
-
-!SLIDE
-### Async
+### Idempotent
 
     @@@ ruby
-    require 'async'
-    require 'async/resque'
-    Async.backend = Async::ResqueBackend
+    class InstanceProvision < ActiveRecord::Base
+      belongs_to :instance
 
-    class Invoice < ActiveRecord::Base
-      def process(arg)
-        Async.run{ process_now(arg)}
-      end
-      def process_now(arg)
-        #actually do it
-      end
-    end
-
-    invoice.process 123
-
-## `github.com/engineyard/async`
+      def run(instance_id)
+        with_lock do
+          if self.state == "running"
+            raise
+          else
+            self.state = "running"
+            self.started_at = Time.now
+            save!
+          end
+        end
+        ...
 
 !SLIDE
-### InvoiceProcessingTask
+### Model Intent
+(picture of Josh)
+
+!SLIDE
+### Types of Reliability
+
+!SLIDE
+### Monitoring Resque
+
+.notes graceful restart
+.notes kill old dead things
+
+!SLIDE
+### Monitor with God
 
     @@@ ruby
+    5.times do |n|
+      God.watch do |w|
+        w.name     = "resque-#{num}"
+        w.group    = 'resque'
+        w.interval = 30.seconds
+        w.log      = "#{app_root}/log/worker.#{num}.log"
+        w.dir      = app_root
+        w.env      = {
+          "GOD_WATCH"   => w.name,
+          "QUEUE"       => '*'
+        }
+        w.start    = "bundle exec rake --trace resque:work"
+      ...
+
+# `godrb.com`
+
+!SLIDE
+### Or Daemons
+
+    @@@ ruby
+    require 'daemons'
+
+    options = {
+      :app_name => "worker",
+      :log_output => true,
+      :backtrace => true,
+      :dir_mode => :normal,
+      :dir => File.expand_path('../../tmp/pids',  __FILE__),
+      :log_dir => File.expand_path('../../log',  __FILE__),
+      :multiple => true,
+      :monitor => true
+    }
+
+    Daemons.run(File.expand_path('../worker',  __FILE__), options)
+
+# `daemons.rubyforge.org`
+
+!SLIDE
+### Or Don't?
+
+![](images/torquebox.jpg)
+
+# `torquebox.org`
+
+!SLIDE[bg=images/chris.jpg]
+&nbsp;
+
+!SLIDE
+### Resque Event Loop
+
+    @@@ ruby
+    def work(interval = 5, &block)
+      loop do
+        run_hook :before_fork, job
+
+        if @child = fork
+          procline "Forked #{@child} at #{Time.now.to_i}"
+          Process.wait
+        else
+          procline "Processing #{job.queue} since #{Time.now.to_i}"
+          perform(job, &block)
+          exit! unless @cant_fork
+        end
+      end
+
+`github.com/defunkt/resque/blob/master/lib/resque/worker.rb`
+
+!SLIDE
+### EventMachine
+
+    @@@ C
+    void EventMachine_t::Run()
+      //Epoll and Kqueue stuff..
+      ...
+
+      while (true) {
+        _UpdateTime();
+        _RunTimers();
+
+        _AddNewDescriptors();
+        _ModifyDescriptors();
+
+        _RunOnce();
+        if (bTerminateSignalReceived)
+          break;
+      }
+    }
+
+`github.com/eventmachine/eventmachine/blob/master/ext/em.cpp`
+
+
+!SLIDE
+### EM.next_tick
+
+    @@@ ruby
+    require 'eventmachine'
+    EM.run {
+      EM.start_server(host, port, self)
+    }
+
+    EM.next_tick{ puts "do something" }
+
+
+!SLIDE
+### Threads
+
+    @@@ ruby
+    class Sidekiq::Manager
+      include Celluloid
+      ???
+
+    class Sidekiq::Fetcher
+      include Celluloid
+      ???
+
+    class Sidekiq::Processor
+      include Celluloid
+      ???
+
+# `sidekiq.org`
+## `github.com/celluloid/celluloid`
+
+
+!SLIDE
+### Resque graceful restart
+
+!SLIDE
+### Push a nil
+
+!SLIDE
+### Do it Yourself
+
+!SLIDE
+### DIY graceful restart
+
+!SLIDE
+### DIY Redis Queue
+
+    @@@ ruby
+    class InvoiceProcessingTask
+
       def self.enq_task(task_id, invoice_id)
         REDIS.rpush("tasks:#{invoice_id}", task_id)
         REDIS.rpush("invoices", invoice_id)
@@ -730,19 +776,11 @@ blob/master/lib/resque/worker.rb#L120
 # Know where you fail and compensate?
 
 !SLIDE
-### BONUS: You don't always need to build a job class
+### Avoid Delayed::Job
 
-    @@@ ruby
-    m = MultiHeadedGreekMonster.new(nil, 3, 28371) do |f, w|
-      f.name = f.name + " improved"
-      f.save!
-    end
-    Face.all.each do |f|
-      monster.feed(f)
-    end
-    monster.finish
+(picture of evan)
 
-`github.com/engineyard/multi_headed_greek_monster`
+`github.com/ryandotsmith/queue_classic`
 
 !SLIDE
 # Questions?
