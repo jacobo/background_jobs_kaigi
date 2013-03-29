@@ -98,7 +98,7 @@
     end
 
 !SLIDE
-### Will revisit in 4.1
+### Will be <s><div></div>revisited</s> <br/> re-written in 4.1
 
 ## `github.com/rails/rails/pull/9910`
 ## `github.com/rails/rails/pull/9924`
@@ -326,6 +326,15 @@
 ## Did we fail at using them?
 
 .notes stray from best practices leads to re-writing things from scratch. leads to being on an island
+
+!SLIDE bullets incremental
+### Reliability
+* Retry (raise, crash, hang). Time-out
+* Reliable Queue vs Reliable Job
+* Monitor / Maintain N workers
+* Kill / Restart workers
+* Run only once / no-more-than once
+* Did it run? Did it fail? How? Where?
 
 !SLIDE[bg=/images/engineyardcloud.png]
 ### Trains
@@ -572,10 +581,7 @@
 (picture of Josh)
 
 !SLIDE
-### Types of Reliability
-
-!SLIDE
-### Monitoring Resque
+### Reliability: Monitoring
 
 .notes graceful restart
 .notes kill old dead things
@@ -706,15 +712,14 @@
 # `sidekiq.org`
 ## `github.com/celluloid/celluloid`
 
+!SLIDE
+### Reliability: Graceful Restart
 
 !SLIDE
 ### Resque graceful restart
 
 !SLIDE
 ### Push a nil
-
-!SLIDE
-### Do it Yourself
 
 !SLIDE
 ### DIY graceful restart
@@ -764,23 +769,21 @@
 .notes https://github.com/hone/bundler-api-replay/blob/master/lib/bundler_api/consumer_pool.rb
 
 !SLIDE
-### Conclusions?
-
-!SLIDE
-# Pick the right tool for the job?
-
-!SLIDE
-# Understand your tradeoffs?
-
-!SLIDE
-# Know where you fail and compensate?
+### Conclusions
 
 !SLIDE
 ### Avoid Delayed::Job
 
 (picture of evan)
 
-`github.com/ryandotsmith/queue_classic`
+## `github.com/ryandotsmith/queue_classic`
+
+!SLIDE bullets incremental
+### Conclusions
+
+  * Know your tools and their limitations
+  * Model important jobs in your domain
+  * Contribute to Resque
 
 !SLIDE
-# Questions?
+### Questions?
