@@ -528,9 +528,8 @@
 
 ## `github.com/engineyard/resque-unique-job`
 
-!SLIDE
-### Sidekiq doesn't use Resque plugins
-(picture of Jim and Ryan)
+!SLIDE[bg=images/jimryan.jpg] moredarkness
+### How about Sidekiq?
 
 !SLIDE
 ### Data belongs in a database (not redis)
@@ -551,6 +550,9 @@
 
         instance.attach_ip!
         ...
+
+!SLIDE[bg=images/josh.jpg] moredarkness
+### Model Intent
 
 !SLIDE
 # `started_at`
@@ -576,66 +578,58 @@
         end
         ...
 
-!SLIDE
-### Model Intent
-(picture of Josh)
+!SLIDE biggercode
+### Redis locks
 
-!SLIDE
-### Reliability: Monitoring
-
-.notes graceful restart
-.notes kill old dead things
-
-!SLIDE
-### Monitor with God
-
-    @@@ ruby
-    5.times do |n|
-      God.watch do |w|
-        w.name     = "resque-#{num}"
-        w.group    = 'resque'
-        w.interval = 30.seconds
-        w.log      = "#{app_root}/log/worker.#{num}.log"
-        w.dir      = app_root
-        w.env      = {
-          "GOD_WATCH"   => w.name,
-          "QUEUE"       => '*'
-        }
-        w.start    = "bundle exec rake --trace resque:work"
-      ...
-
-# `godrb.com`
-
-!SLIDE
-### Or Daemons
-
-    @@@ ruby
-    require 'daemons'
-
-    options = {
-      :app_name => "worker",
-      :log_output => true,
-      :backtrace => true,
-      :dir_mode => :normal,
-      :dir => File.expand_path('../../tmp/pids',  __FILE__),
-      :log_dir => File.expand_path('../../log',  __FILE__),
-      :multiple => true,
-      :monitor => true
-    }
-
-    Daemons.run(File.expand_path('../worker',  __FILE__), options)
-
-# `daemons.rubyforge.org`
-
-!SLIDE
-### Or Don't?
-
-![](images/torquebox.jpg)
-
-# `torquebox.org`
-
-!SLIDE[bg=images/chris.jpg]
 &nbsp;
+
+    @@@ ruby
+    if redis.getset(@lock_name, "locked")
+      # lock aquired
+    else
+      # lock aquisition failed
+    end
+
+&nbsp;
+
+    @@@ ruby
+    redis.del(@lock_name)
+    # lock released
+
+
+!SLIDE
+### Async::Locked
+
+    @@@ ruby
+    require 'async'
+    require 'async/resque'
+    require 'async/locked'
+    Async.backend = ...
+    Async::Locked.redis = ...
+
+    class Invoice < ActiveRecord::Base
+      def process(*args)
+        Async::Locked.run{ process_now(*args)}
+      end
+      def process_now(*args)
+        #actually do it
+      end
+    end
+
+## `github.com/engineyard/async`
+
+!SLIDE[bg=images/peaches.jpg]
+### Background Jobs <br/> from Scratch
+
+!SLIDE bullets incremental bigger-bullets
+### Ingredients
+* Loop
+* Monitor
+* Restart
+* Queue
+
+!SLIDE[bg=images/maze.jpg]
+### Loop
 
 !SLIDE
 ### Resque Event Loop
@@ -712,24 +706,174 @@
 # `sidekiq.org`
 ## `github.com/celluloid/celluloid`
 
-!SLIDE
-### Reliability: Graceful Restart
+
+!SLIDE[bg=images/riding.jpg]
+### Monitoring
+
+.notes graceful restart
+.notes kill old dead things
 
 !SLIDE
-### Resque graceful restart
+### Monitor with God
+
+    @@@ ruby
+    5.times do |n|
+      God.watch do |w|
+        w.name     = "resque-#{num}"
+        w.group    = 'resque'
+        w.interval = 30.seconds
+        w.log      = "#{app_root}/log/worker.#{num}.log"
+        w.dir      = app_root
+        w.env      = {
+          "GOD_WATCH"   => w.name,
+          "QUEUE"       => '*'
+        }
+        w.start    = "bundle exec rake --trace resque:work"
+      ...
+
+# `godrb.com`
 
 !SLIDE
-### Push a nil
+### Or Daemons
+
+    @@@ ruby
+    require 'daemons'
+
+    options = {
+      :app_name => "worker",
+      :log_output => true,
+      :backtrace => true,
+      :dir_mode => :normal,
+      :dir => File.expand_path('../../tmp/pids',  __FILE__),
+      :log_dir => File.expand_path('../../log',  __FILE__),
+      :multiple => true,
+      :monitor => true
+    }
+
+    Daemons.run(File.expand_path('../worker',  __FILE__), options)
+
+# `daemons.rubyforge.org`
 
 !SLIDE
-### DIY graceful restart
+### Or Don't?
+
+![](images/torquebox.jpg)
+
+# `torquebox.org`
+
+!SLIDE[bg=images/chris.jpg]
+&nbsp;
+
+!SLIDE[bg=images/paddleout.jpg]
+### Restart
+
+!SLIDE align-left
+### Resque Signals
+
+## `QUIT` - Wait for child to finish then exit
+
+## `TERM` / `INT` - Immediately kill child, exit
+
+## `USR1` - Immediately kill child, don't exit
+
+## `USR2` -Don't start to process new jobs
+
+## `CONT` - Start to process new jobs again after a USR2
+
+!SLIDE[bg=images/lineup.jpg]
+### Queue
 
 !SLIDE
-### DIY Redis Queue
+### Qu Push/Pop Redis
+
+    @@@ ruby
+    payload.id = SimpleUUID::UUID.new.to_guid
+    redis.set("job:#{payload.id}", 
+      encode('klass' => payload.klass.to_s, 
+             'args' => payload.args))
+    redis.rpush("queue:#{payload.queue}", payload.id)
+    redis.sadd('queues', payload.queue)
+
+    ...
+
+    redis.lpop(queue)
+
+`github.com/bkeepers/qu/blob/master/lib/qu/backend/redis.rb`
+
+!SLIDE
+### Qu Push/Pop Mongo
+
+    @@@ ruby
+    payload.id = SimpleUUID::UUID.new.to_guid
+    payload.id = BSON::ObjectId.new
+    jobs(payload.queue).insert({
+      '_id' => payload.id, 
+      'klass' => payload.klass.to_s, 'args' => payload.args})
+    self[:queues].update({'name' => payload.queue}, 
+      {'name' => payload.queue}, 'upsert' => true)
+
+    ...
+
+    if doc = jobs(queue).find_and_modify(:remove => true)
+      doc['id'] = doc.delete('_id')
+      return Payload.new(doc)
+    end
+
+`github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb`
+
+!SLIDE[bg=images/handstands.jpg]
+### All Together
+
+!SLIDE
+
+## `script/invoice_worker`
+
+    @@@ ruby
+    #!/usr/bin/env ruby
+    require File.expand_path('../../config/environment',
+      __FILE__)
+
+    TrapLoop.start do
+      Worker.work!
+    end
+
+## `script/invoice_runner start`
+## `script/invoice_runner stop`
+
+    @@@ ruby
+    require 'daemons'
+    Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)
+
+!SLIDE
+    @@@ ruby
+    class TrapLoop
+      trap('TERM') { stop! }
+      trap('INT')  { stop! }
+      trap('SIGTERM') { stop! }
+
+      def self.stop!
+        @loop = false
+      end
+
+      def self.safe_exit_point!
+        if @started && !@loop
+          raise Interrupt
+        end
+      end
+
+      def self.start(&block)
+        @started = true
+        @loop = true
+        while(@loop) do
+          yield
+        end
+      end
+
+
+!SLIDE
 
     @@@ ruby
     class InvoiceProcessingTask
-
       def self.enq_task(task_id, invoice_id)
         REDIS.rpush("tasks:#{invoice_id}", task_id)
         REDIS.rpush("invoices", invoice_id)
@@ -738,6 +882,7 @@
       def self.process_invoices!
         while(invoice_id = REDIS.lpop("invoices"))
           process_tasks!(invoice_id)
+          TrapLoop.safe_exit_point!
         end
       end
 
@@ -745,6 +890,7 @@
         while(task_id = REDIS.lpop("tasks:#{invoice_id}"))
           if task = InvoiceProcessingTask.find_by_id(task_id)
             task.process!
+            TrapLoop.safe_exit_point!
           end
         end
       end
@@ -768,13 +914,14 @@
 
 .notes https://github.com/hone/bundler-api-replay/blob/master/lib/bundler_api/consumer_pool.rb
 
-!SLIDE
+!SLIDE[bg=images/sunset2.jpg]
 ### Conclusions
 
-!SLIDE
+!SLIDE[bg=images/evan.jpg] moredarkness shadowh2
 ### Avoid Delayed::Job
 
-(picture of evan)
+<br/><br/><br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/><br/><br/>
 
 ## `github.com/ryandotsmith/queue_classic`
 
@@ -785,5 +932,9 @@
   * Model important jobs in your domain
   * Contribute to Resque
 
-!SLIDE
+!SLIDE[bg=images/walking.jpg] shadowh2
 ### Questions?
+<br/><br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/><br/>
+## `jacobo.github.com/background_jobs`
+## @beanstalksurf
