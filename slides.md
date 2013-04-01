@@ -585,9 +585,9 @@
 
     @@@ ruby
     if redis.getset(@lock_name, "locked")
-      # lock aquired
+      # lock failed, already locked
     else
-      # lock aquisition failed
+      # lock aquired, proceed
     end
 
 &nbsp;
