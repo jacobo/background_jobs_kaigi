@@ -78,6 +78,10 @@ pre {
   text-shadow: none;
 }
 
+.bigger-bullets ul li{
+  font-size: 200%;
+}
+
 pre.sh_sourceCode {
   margin: 0;
   font-size: 200%;
@@ -195,6 +199,10 @@ table td {
 pre.bigcode {
   margin-top: 50px;
   font-size: 400%;
+}
+.biggercode pre {
+  margin-top: -30px;
+  font-size: 320%;
 }
 pre.sh_ruby {
   padding-left: 50px;
