@@ -32,9 +32,261 @@
 ### Questions?
 
 !SLIDE[bg=images/closeout.jpg] black
-### A personal history of attempting to make background jobs work better and only being sorta-OK at it
+### Some things I'd like to tell you about background jobs
+<br/><br/><br/>
+<br/><br/><br/>
 <br/><br/><br/>
 ## `jacobo.github.com/background_jobs`
+
+!SLIDE[bg=images/peaches.jpg] moredarkness bullets incremental bigger-bullets
+### 3 Ingredients
+* Work Loop
+* Monitor / Restart
+* Queue
+
+!SLIDE[bg=images/maze.jpg]
+### Loop
+
+!SLIDE
+### Resque Event Loop
+
+    @@@ ruby
+    def work(interval = 5, &block)
+      loop do
+        run_hook :before_fork, job
+
+        if @child = fork
+          procline "Forked #{@child} at #{Time.now.to_i}"
+          Process.wait
+        else
+          procline "Processing #{job.queue} since #{Time.now.to_i}"
+          perform(job, &block)
+          exit! unless @cant_fork
+        end
+      end
+
+`github.com/defunkt/resque/blob/master/lib/resque/worker.rb`
+
+!SLIDE
+### EventMachine
+
+    @@@ C
+    void EventMachine_t::Run()
+      //Epoll and Kqueue stuff..
+      ...
+
+      while (true) {
+        _UpdateTime();
+        _RunTimers();
+
+        _AddNewDescriptors();
+        _ModifyDescriptors();
+
+        _RunOnce();
+        if (bTerminateSignalReceived)
+          break;
+      }
+    }
+
+`github.com/eventmachine/eventmachine/blob/master/ext/em.cpp`
+
+
+!SLIDE
+### EM.next_tick
+
+    @@@ ruby
+    require 'eventmachine'
+    EM.run {
+      EM.start_server(host, port, self)
+    }
+
+    EM.next_tick{ puts "do something" }
+
+!SLIDE
+### Celluloid / Sidekiq
+
+    @@@ ruby
+    class Sidekiq::Manager
+      include Celluloid
+      ???
+
+    class Sidekiq::Fetcher
+      include Celluloid
+      ???
+
+    class Sidekiq::Processor
+      include Celluloid
+      ???
+
+# `sidekiq.org`
+## `github.com/celluloid/celluloid`
+
+!SLIDE[bg=images/riding.jpg]
+### Monitoring
+
+.notes graceful restart
+.notes kill old dead things
+
+!SLIDE align-left
+### Resque Signals
+
+## `QUIT` - Wait for child to finish then exit
+
+## `TERM` / `INT` - Immediately kill child, exit
+
+## `USR1` - Immediately kill child, don't exit
+
+## `USR2` -Don't start to process new jobs
+
+## `CONT` - Start to process new jobs again after a USR2
+
+!SLIDE
+### Monitor with God
+
+    @@@ ruby
+    5.times do |n|
+      God.watch do |w|
+        w.name     = "resque-#{num}"
+        w.group    = 'resque'
+        w.interval = 30.seconds
+        w.log      = "#{app_root}/log/worker.#{num}.log"
+        w.dir      = app_root
+        w.env      = {
+          "GOD_WATCH"   => w.name,
+          "QUEUE"       => '*'
+        }
+        w.start    = "bundle exec rake --trace resque:work"
+      ...
+
+# `godrb.com`
+
+!SLIDE
+### Or Daemons
+
+    @@@ ruby
+    require 'daemons'
+
+    options = {
+      :app_name => "worker",
+      :log_output => true,
+      :backtrace => true,
+      :dir_mode => :normal,
+      :dir => File.expand_path('../../tmp/pids',  __FILE__),
+      :log_dir => File.expand_path('../../log',  __FILE__),
+      :multiple => true,
+      :monitor => true
+    }
+
+    Daemons.run(File.expand_path('../worker',  __FILE__), options)
+
+# `daemons.rubyforge.org`
+
+!SLIDE
+### Or Don't?
+
+![](images/torquebox.jpg)
+
+# `torquebox.org`
+
+!SLIDE[bg=images/chris.jpg]
+&nbsp;
+
+!SLIDE[bg=images/lineup.jpg]
+### Queue
+
+!SLIDE
+### Qu Push/Pop Redis
+
+    @@@ ruby
+    payload.id = SimpleUUID::UUID.new.to_guid
+    redis.set("job:#{payload.id}", 
+      encode('klass' => payload.klass.to_s, 
+             'args' => payload.args))
+    redis.rpush("queue:#{payload.queue}", payload.id)
+    redis.sadd('queues', payload.queue)
+
+    ...
+
+    redis.lpop(queue)
+
+`github.com/bkeepers/qu/blob/master/lib/qu/backend/redis.rb`
+
+!SLIDE
+### Qu Push/Pop Mongo
+
+    @@@ ruby
+    payload.id = SimpleUUID::UUID.new.to_guid
+    payload.id = BSON::ObjectId.new
+    jobs(payload.queue).insert({
+      '_id' => payload.id, 
+      'klass' => payload.klass.to_s, 'args' => payload.args})
+    self[:queues].update({'name' => payload.queue}, 
+      {'name' => payload.queue}, 'upsert' => true)
+
+    ...
+
+    if doc = jobs(queue).find_and_modify(:remove => true)
+      doc['id'] = doc.delete('_id')
+      return Payload.new(doc)
+    end
+
+`github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb`
+
+!SLIDE[bg=images/skimboard.jpg] smallerh2 moredarkness
+### Rails 4 Queuing
+#### (the 4th ingredient)
+<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+## `github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb`
+
+!SLIDE
+### The API
+
+    @@@ ruby
+    class MyJob
+
+      def initialize(account)
+        @account = account
+      end
+
+      def run
+        puts "working on #{@account.name}..."
+      end
+
+    end
+
+    Rails.queue[:jobs].push(MyJob.new(account))
+
+!SLIDE[bg=images/marshal.png]
+### Fail at Serialization
+&nbsp;
+
+!SLIDE
+### Solve the wrong problem
+
+    @@@ ruby
+    class BodyProxy
+      def each
+        @body.each{|x| yield x}
+        while(email = CleverMailer.emails_to_send.pop)
+          email.deliver
+        end
+      end
+    end
+
+    def call(env)
+      status, headers, body = @app.call(env)
+      headers["Content-Length"] = body.map(&:bytesize).sum
+      [status, headers, BodyProxy.new(body)]
+    end
+
+!SLIDE
+### Will be <s><div></div>revisited</s> <br/> re-written in 4.1
+
+## `github.com/rails/rails/pull/9910`
+## `github.com/rails/rails/pull/9924`
+
+!SLIDE[bg=images/skimboardfail.jpg]
+### Moving on...
 
 !SLIDE
 ### 2009
@@ -486,239 +738,6 @@
 
 .notes at 3M we fixed our problems by making the Queuing system smarter.
 .notes I tried to do this at EY and failed, so we fixed out problems by using a dumber Q and smarter business logic
-
-!SLIDE[bg=images/skimboard.jpg] smallerh2 moredarkness
-### Rails 4 Queuing
-
-## `github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb`
-
-!SLIDE
-### Fail at the API
-
-    @@@ ruby
-    class MyJob
-
-      def initialize(account)
-        @account = account
-      end
-
-      def run
-        puts "working on #{@account.name}..."
-      end
-
-    end
-
-    Rails.queue[:jobs].push(MyJob.new(account))
-
-!SLIDE[bg=images/marshal.png]
-### Fail at Serialization
-&nbsp;
-
-!SLIDE
-### Solve the wrong problem
-
-    @@@ ruby
-    class BodyProxy
-      def each
-        @body.each{|x| yield x}
-        while(email = CleverMailer.emails_to_send.pop)
-          email.deliver
-        end
-      end
-    end
-
-    def call(env)
-      status, headers, body = @app.call(env)
-      headers["Content-Length"] = body.map(&:bytesize).sum
-      [status, headers, BodyProxy.new(body)]
-    end
-
-!SLIDE
-### Will be <s><div></div>revisited</s> <br/> re-written in 4.1
-
-## `github.com/rails/rails/pull/9910`
-## `github.com/rails/rails/pull/9924`
-
-!SLIDE[bg=images/skimboardfail.jpg]
-### Moving on...
-
-!SLIDE[bg=images/peaches.jpg] moredarkness bullets incremental bigger-bullets
-### 3 Ingredients
-* Work Loop
-* Monitor / Restart
-* Queue
-
-!SLIDE[bg=images/maze.jpg]
-### Loop
-
-!SLIDE
-### Resque Event Loop
-
-    @@@ ruby
-    def work(interval = 5, &block)
-      loop do
-        run_hook :before_fork, job
-
-        if @child = fork
-          procline "Forked #{@child} at #{Time.now.to_i}"
-          Process.wait
-        else
-          procline "Processing #{job.queue} since #{Time.now.to_i}"
-          perform(job, &block)
-          exit! unless @cant_fork
-        end
-      end
-
-`github.com/defunkt/resque/blob/master/lib/resque/worker.rb`
-
-!SLIDE
-### EventMachine
-
-    @@@ C
-    void EventMachine_t::Run()
-      //Epoll and Kqueue stuff..
-      ...
-
-      while (true) {
-        _UpdateTime();
-        _RunTimers();
-
-        _AddNewDescriptors();
-        _ModifyDescriptors();
-
-        _RunOnce();
-        if (bTerminateSignalReceived)
-          break;
-      }
-    }
-
-`github.com/eventmachine/eventmachine/blob/master/ext/em.cpp`
-
-
-!SLIDE
-### EM.next_tick
-
-    @@@ ruby
-    require 'eventmachine'
-    EM.run {
-      EM.start_server(host, port, self)
-    }
-
-    EM.next_tick{ puts "do something" }
-
-!SLIDE[bg=images/riding.jpg]
-### Monitoring
-
-.notes graceful restart
-.notes kill old dead things
-
-!SLIDE
-### Monitor with God
-
-    @@@ ruby
-    5.times do |n|
-      God.watch do |w|
-        w.name     = "resque-#{num}"
-        w.group    = 'resque'
-        w.interval = 30.seconds
-        w.log      = "#{app_root}/log/worker.#{num}.log"
-        w.dir      = app_root
-        w.env      = {
-          "GOD_WATCH"   => w.name,
-          "QUEUE"       => '*'
-        }
-        w.start    = "bundle exec rake --trace resque:work"
-      ...
-
-# `godrb.com`
-
-!SLIDE
-### Or Daemons
-
-    @@@ ruby
-    require 'daemons'
-
-    options = {
-      :app_name => "worker",
-      :log_output => true,
-      :backtrace => true,
-      :dir_mode => :normal,
-      :dir => File.expand_path('../../tmp/pids',  __FILE__),
-      :log_dir => File.expand_path('../../log',  __FILE__),
-      :multiple => true,
-      :monitor => true
-    }
-
-    Daemons.run(File.expand_path('../worker',  __FILE__), options)
-
-# `daemons.rubyforge.org`
-
-!SLIDE
-### Or Don't?
-
-![](images/torquebox.jpg)
-
-# `torquebox.org`
-
-!SLIDE[bg=images/chris.jpg]
-&nbsp;
-
-!SLIDE[bg=images/paddleout.jpg]
-### Restart
-
-!SLIDE align-left
-### Resque Signals
-
-## `QUIT` - Wait for child to finish then exit
-
-## `TERM` / `INT` - Immediately kill child, exit
-
-## `USR1` - Immediately kill child, don't exit
-
-## `USR2` -Don't start to process new jobs
-
-## `CONT` - Start to process new jobs again after a USR2
-
-!SLIDE[bg=images/lineup.jpg]
-### Queue
-
-!SLIDE
-### Qu Push/Pop Redis
-
-    @@@ ruby
-    payload.id = SimpleUUID::UUID.new.to_guid
-    redis.set("job:#{payload.id}", 
-      encode('klass' => payload.klass.to_s, 
-             'args' => payload.args))
-    redis.rpush("queue:#{payload.queue}", payload.id)
-    redis.sadd('queues', payload.queue)
-
-    ...
-
-    redis.lpop(queue)
-
-`github.com/bkeepers/qu/blob/master/lib/qu/backend/redis.rb`
-
-!SLIDE
-### Qu Push/Pop Mongo
-
-    @@@ ruby
-    payload.id = SimpleUUID::UUID.new.to_guid
-    payload.id = BSON::ObjectId.new
-    jobs(payload.queue).insert({
-      '_id' => payload.id, 
-      'klass' => payload.klass.to_s, 'args' => payload.args})
-    self[:queues].update({'name' => payload.queue}, 
-      {'name' => payload.queue}, 'upsert' => true)
-
-    ...
-
-    if doc = jobs(queue).find_and_modify(:remove => true)
-      doc['id'] = doc.delete('_id')
-      return Payload.new(doc)
-    end
-
-`github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb`
 
 !SLIDE[bg=images/handstands.jpg]
 ### All Together

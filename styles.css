@@ -260,7 +260,14 @@ h3 small {
 .smallerh2 h2 {
   font-size: 180%;
   margin-left: -10px;
+  padding-bottom: 10px;
+  background: rgba(0, 0, 0, 0.8);
+}
+.smallerh2 h4{
+  font-size: 280%;
+  color: #fff;
   margin-top: -50px;
+  margin-left: -10px;
   padding-bottom: 10px;
   background: rgba(0, 0, 0, 0.8);
 }
