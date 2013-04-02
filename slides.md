@@ -199,14 +199,7 @@
 
 .notes https://github.com/brontes3d/amqp/blob/master/lib/amqp/client.rb#L215
 
-!SLIDE[bg=images/sunset.jpg] align-left
-### Moment of Reflection
-
-.notes Did the tools fail us?
-.notes Did we fail at using them?
-.notes stray from best practices leads to re-writing things from scratch. leads to being on an island
-
-!SLIDE bullets incremental
+!SLIDE bullets
 ### Reliability
 * Retry (raise, crash, hang). Time-out
 * Reliable Queue vs Reliable Job
@@ -214,6 +207,13 @@
 * Kill / Restart workers
 * Run only once / no-more-than once
 * Did it run? Did it fail? How? Where?
+
+!SLIDE[bg=images/sunset.jpg] align-left
+### Moment of Reflection
+
+.notes Did the tools fail us?
+.notes Did we fail at using them?
+.notes stray from best practices leads to re-writing things from scratch. leads to being on an island
 
 !SLIDE[bg=/images/engineyardcloud.png]
 ### Trains
@@ -394,28 +394,6 @@
 ## `http://youtu.be/NpTT30wLL-w`
 
 !SLIDE
-### More Resque Plugins...
-
-    @@@ ruby
-    class MyJob
-      extend Resque::Plugins::UniqueJob
-
-      def self.perform(*args)
-        #do stuff
-      end
-    end
-
-## `github.com/engineyard/resque-unique-job`
-
-!SLIDE[bg=images/jimryan.jpg] moredarkness shadowh2
-### How about Sidekiq?
-
-<br/><br/><br/><br/><br/><br/><br/>
-<br/><br/><br/><br/><br/><br/><br/>
-
-## `sidekiq.org`
-
-!SLIDE
 ### Data belongs in a database (not redis)
 
     @@@ ruby
@@ -439,6 +417,7 @@
 ### Model Intent
 
 !SLIDE
+# `requested_at`
 # `started_at`
 # `finished_at`
 # `state`
