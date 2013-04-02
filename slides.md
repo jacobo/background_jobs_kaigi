@@ -195,6 +195,51 @@
 ### Queue
 
 !SLIDE
+### Thread-safe Queue
+    @@@ ruby
+    module BundlerApi
+      class ConsumerPool
+
+        def initialize
+          @queue = Queue.new
+        end
+
+        def enq(job)
+          @queue.enq(job)
+        end
+
+        ...
+          job = @queue.deq
+          job.run
+
+`github.com/rubygems/bundler-api/blob/master/lib/`
+`bundler_api/update/consumer_pool.rb`
+
+
+!SLIDE
+### DRB objects
+
+    @@@ ruby
+    class MultiHeadedGreekMonster
+      class ServiceManager
+        def initialize(progress)
+          @things = []
+        end
+        def give(thing)
+          @things.unshift(thing)
+        end
+        def take
+          @things && @things.pop
+        end
+
+    ...
+    DRb.start_service "druby://localhost:#{@on_port}", 
+                      ServiceManager.new(@progress)
+
+`github.com/engineyard/multi_headed_greek_monster/blob/master/`
+`lib/multi_headed_greek_monster.rb`
+
+!SLIDE
 ### Qu Push/Pop Redis
 
     @@@ ruby
