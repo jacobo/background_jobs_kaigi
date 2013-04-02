@@ -7,6 +7,11 @@
 
 !SLIDE[bg=images/distill.jpg]
 ### Engine Yard
+<br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
+## `distill.engineyard.com`
+## CFP closes Tuesday, April 9
 
 !SLIDE[bg=images/closeout.jpg] black
 ### How to Fail at Background Jobs
@@ -14,149 +19,27 @@
 
 .notes Failure is a good thing. I want to spark conversations.
 
-!SLIDE
-### DRB is built-in
+!SLIDE[bg=images/evan.jpg] moredarkness shadowh2
+### Delayed::Job
 
-## Queue Server
-    @@@ ruby
-    require 'drb'
-    DRb.start_service "druby://localhost:23121", []
-    DRb.thread.join
+<br/><br/><br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/><br/>
 
-## Push into the Q
+## try this instead: (requires postgresql) `github.com/ryandotsmith/queue_classic`
 
-    @@@ ruby
-    remote_q = DRbObject.new nil, "druby://localhost:23121"
-    remote_q.push("some work")
+!SLIDE[bg=images/walking.jpg] shadowh2
+### The End
+### Questions?
 
-## Work it off
-    @@@ ruby
-    remote_q = DRbObject.new nil, "druby://localhost:23121"
-    while(work = remote_q.pop)
-      puts "doing #{work}"
-    end
-
-!SLIDE
-### Use it for migrations
-
-    @@@ ruby
-    m = MultiHeadedGreekMonster.new(nil, 3, 28371) do |f, w|
-      f.name = f.name + " improved"
-      f.save!
-    end
-    Face.all.each do |f|
-      monster.feed(f)
-    end
-    monster.finish
-
-`github.com/engineyard/multi_headed_greek_monster`
-
-
-!SLIDE[bg=images/skimboard.jpg]
-### Rails 4 Queuing
-
-!SLIDE
-### Fail at the API
-
-    @@@ ruby
-    class MyJob
-
-      def initialize(account)
-        @account = account
-      end
-
-      def run
-        puts "working on #{@account.name}..."
-      end
-
-    end
-
-    Rails.queue[:jobs].push(MyJob.new(account))
-
-
-!SLIDE[bg=images/marshal.png]
-### Fail at Serialization
-&nbsp;
-
-!SLIDE
-### Solve the wrong problem
-
-    @@@ ruby
-    class BodyProxy
-      def each
-        @body.each{|x| yield x}
-        while(email = CleverMailer.emails_to_send.pop)
-          email.deliver
-        end
-      end
-    end
-
-    def call(env)
-      status, headers, body = @app.call(env)
-      headers["Content-Length"] = body.map(&:bytesize).sum
-      [status, headers, BodyProxy.new(body)]
-    end
-
-!SLIDE
-### Will be <s><div></div>revisited</s> <br/> re-written in 4.1
-
-## `github.com/rails/rails/pull/9910`
-## `github.com/rails/rails/pull/9924`
-
-!SLIDE[bg=images/skimboardfail.jpg]
-### Moving on...
-
-!SLIDE
-### Teeth
-
-    @@@ ruby
-    define_system(:us_child) do
-
-      common_name "Universal System for deciduous dentition"
-
-      upper_right "E", "D", "C", "B", "A"
-
-      upper_left  "J", "I", "H", "G", "F"
-
-      lower_right "P", "Q", "R", "S", "T"
-
-      lower_left  "K", "L", "M", "N", "O"
-
-    end
-
-## `github.com/brontes3d/tooth_numbering`
-
-.notes The theme of this section is doing it yourself. The lesson is to use the Q systems as intended and follow their best practices.
+!SLIDE[bg=images/closeout.jpg] black
+### A personal history of attempting to make background jobs work better and only being sorta-OK at it
+<br/><br/><br/>
+## `jacobo.github.com/background_jobs`
 
 !SLIDE
 ### 2009
 
 ![](images/3m-lava-chairside-oral-scanner.jpg)
-
-!SLIDE
-### XMPP
-### a.k.a. Jabber
-### a Chat protocol
-## `xmpp.org/xmpp-protocols/xmpp-extensions`
-## `github.com/djabberd/DJabberd`
-## `github.com/brontes3d/xmpp4r`
-## `github.com/brontes3d/xmpp_messaging`
-
-!SLIDE
-### Write your own clustering
-
-    @@@ perl
-      my($mailbox, $private_group) = Spread::connect(
-        spread_name => '4444@host.domain.com');
-
-      Spread::multicast($mbox, SAFE_MESS, @joined_groups,
-        0, "Important Message");
-
-`search.cpan.org/~jesus/Spread-3.17.4.4/Spread.pm`
-
-`www.spread.org/docs/spread_docs_4/docs/message_types.html`
-
-## `rbspread.sourceforge.net`
 
 !SLIDE
 ### Starling, Workling
@@ -230,11 +113,11 @@
 
     class BackgroundJob
       def run(device_id)
+        #sleep 1 ?
         Device.find(device_id)
       end
     end
 
-## `after_create` != `after_sql_commit`
 
 !SLIDE
 ### Hack ActiveRecord
@@ -257,11 +140,11 @@
 
 ## `github.com/brontes3d/commit_callback`
 
-!SLIDE[bg=images/manybugs.jpg]
+!SLIDE[bg=images/manybugs.jpg] moredarkness bullets incremental bigger-bullets
 ### More Bugs
+<br/><br/><br/>
 
-!SLIDE[bg=images/steep.jpg]
-### Fundamental Flaw
+* Fundamental Flaw
 
 .notes generic abstractions are hard
 .notes poll vs. push
@@ -272,7 +155,7 @@
 ### Do it Yourself
 
     @@@ ruby
-    class CaseFilesCopier < AmqpListener::Listener
+    class FileCopier < AmqpListener::Listener
       subscribes_to :case_file_copy_requests
 
       def handle(options)
@@ -280,7 +163,7 @@
       end
     end
 
-    CaseFilesCopier.notify(...)
+    FileCopier.notify(...)
 
 &nbsp;
 
@@ -319,12 +202,8 @@
 !SLIDE[bg=images/sunset.jpg] align-left
 ### Moment of Reflection
 
-<br/><br/><br/><br/><br/><br/><br/>
-<br/><br/><br/><br/><br/><br/>
-
-## Did the tools fail us?
-## Did we fail at using them?
-
+.notes Did the tools fail us?
+.notes Did we fail at using them?
 .notes stray from best practices leads to re-writing things from scratch. leads to being on an island
 
 !SLIDE bullets incremental
@@ -528,8 +407,13 @@
 
 ## `github.com/engineyard/resque-unique-job`
 
-!SLIDE[bg=images/jimryan.jpg] moredarkness
+!SLIDE[bg=images/jimryan.jpg] moredarkness shadowh2
 ### How about Sidekiq?
+
+<br/><br/><br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/><br/><br/>
+
+## `sidekiq.org`
 
 !SLIDE
 ### Data belongs in a database (not redis)
@@ -584,10 +468,11 @@
 &nbsp;
 
     @@@ ruby
-    if redis.getset(@lock_name, "locked")
-      # lock failed, already locked
-    else
+    if redis.setnx(@lock_name, "locked")
+      redis.expire(@lock_name, 600)
       # lock aquired, proceed
+    else
+      # lock failed, already locked
     end
 
 &nbsp;
@@ -595,7 +480,6 @@
     @@@ ruby
     redis.del(@lock_name)
     # lock released
-
 
 !SLIDE
 ### Async::Locked
@@ -607,25 +491,82 @@
     Async.backend = ...
     Async::Locked.redis = ...
 
-    class Invoice < ActiveRecord::Base
-      def process(*args)
-        Async::Locked.run{ process_now(*args)}
+    class Instance < ActiveRecord::Base
+      def provision(*args)
+        Async::Locked.run{ provision_now(*args)}
       end
-      def process_now(*args)
+      def provision_now(*args)
         #actually do it
       end
     end
 
 ## `github.com/engineyard/async`
 
-!SLIDE[bg=images/peaches.jpg]
-### Background Jobs <br/> from Scratch
+!SLIDE[bg=images/sunset3.jpg] align-left
+### Moment of Reflection
 
-!SLIDE bullets incremental bigger-bullets
-### Ingredients
-* Loop
-* Monitor
-* Restart
+.notes at 3M we fixed our problems by making the Queuing system smarter.
+.notes I tried to do this at EY and failed, so we fixed out problems by using a dumber Q and smarter business logic
+
+!SLIDE[bg=images/skimboard.jpg] smallerh2 moredarkness
+### Rails 4 Queuing
+
+## `github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb`
+
+!SLIDE
+### Fail at the API
+
+    @@@ ruby
+    class MyJob
+
+      def initialize(account)
+        @account = account
+      end
+
+      def run
+        puts "working on #{@account.name}..."
+      end
+
+    end
+
+    Rails.queue[:jobs].push(MyJob.new(account))
+
+!SLIDE[bg=images/marshal.png]
+### Fail at Serialization
+&nbsp;
+
+!SLIDE
+### Solve the wrong problem
+
+    @@@ ruby
+    class BodyProxy
+      def each
+        @body.each{|x| yield x}
+        while(email = CleverMailer.emails_to_send.pop)
+          email.deliver
+        end
+      end
+    end
+
+    def call(env)
+      status, headers, body = @app.call(env)
+      headers["Content-Length"] = body.map(&:bytesize).sum
+      [status, headers, BodyProxy.new(body)]
+    end
+
+!SLIDE
+### Will be <s><div></div>revisited</s> <br/> re-written in 4.1
+
+## `github.com/rails/rails/pull/9910`
+## `github.com/rails/rails/pull/9924`
+
+!SLIDE[bg=images/skimboardfail.jpg]
+### Moving on...
+
+!SLIDE[bg=images/peaches.jpg] moredarkness bullets incremental bigger-bullets
+### 3 Ingredients
+* Work Loop
+* Monitor / Restart
 * Queue
 
 !SLIDE[bg=images/maze.jpg]
@@ -685,27 +626,6 @@
     }
 
     EM.next_tick{ puts "do something" }
-
-
-!SLIDE
-### Threads
-
-    @@@ ruby
-    class Sidekiq::Manager
-      include Celluloid
-      ???
-
-    class Sidekiq::Fetcher
-      include Celluloid
-      ???
-
-    class Sidekiq::Processor
-      include Celluloid
-      ???
-
-# `sidekiq.org`
-## `github.com/celluloid/celluloid`
-
 
 !SLIDE[bg=images/riding.jpg]
 ### Monitoring
@@ -834,7 +754,7 @@
       __FILE__)
 
     TrapLoop.start do
-      Worker.work!
+      InvoiceProcessingTask.process_invoices!
     end
 
 ## `script/invoice_runner start`
@@ -895,44 +815,14 @@
         end
       end
 
-!SLIDE
-### Even Resque maintainers don't always use Resque
-
-    @@@ ruby
-    module BundlerApi
-      class ConsumerPool
-
-        def enq(job)
-          @queue.enq(job)
-        end
-
-        def create_thread
-          Thread.new {
-            loop do
-              job = @queue.deq
-              job.run
-
-.notes https://github.com/hone/bundler-api-replay/blob/master/lib/bundler_api/consumer_pool.rb
-
-!SLIDE[bg=images/sunset2.jpg]
+!SLIDE[bg=images/sunset2.jpg] moredarkness incremental bullets biggish-bullets bigger-bullets
 ### Conclusions
 
-!SLIDE[bg=images/evan.jpg] moredarkness shadowh2
-### Avoid Delayed::Job
-
-<br/><br/><br/><br/><br/><br/><br/>
-<br/><br/><br/><br/><br/><br/><br/>
-
-## `github.com/ryandotsmith/queue_classic`
-
-!SLIDE bullets incremental
-### Conclusions
-
-  * Know your tools and their limitations
+  * Know your how your tools work
   * Model important jobs in your domain
   * Contribute to Resque
 
-!SLIDE[bg=images/walking.jpg] shadowh2
+!SLIDE[bg=images/mudbath.jpg] shadowh2
 ### Questions?
 <br/><br/><br/><br/><br/><br/>
 <br/><br/><br/><br/><br/><br/>

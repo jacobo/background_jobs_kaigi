@@ -80,6 +80,15 @@ pre {
 
 .bigger-bullets ul li{
   font-size: 200%;
+  background: rgba(0, 0, 0, 0.8);
+  margin-left: -30px;
+  margin-top: 25px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.biggish-bullets ul {
+  margin-top: -25px;
 }
 
 pre.sh_sourceCode {
@@ -247,6 +256,13 @@ h3 small {
   padding-top: 10px;
   padding-bottom: 10px;
   background: rgba(0, 0, 0, 0.6);
+}
+.smallerh2 h2 {
+  font-size: 180%;
+  margin-left: -10px;
+  margin-top: -50px;
+  padding-bottom: 10px;
+  background: rgba(0, 0, 0, 0.8);
 }
 .smaller_p p {
   margin: 0;
