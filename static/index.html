@@ -34,8 +34,6 @@
     
       <script type="text/javascript" src="./js/sh_lang/sh_ruby.min.js"></script>
     
-      <script type="text/javascript" src="./js/sh_lang/sh_perl.min.js"></script>
-    
       <script type="text/javascript" src="./js/sh_lang/sh_c.min.js"></script>
     
   
@@ -101,6 +99,12 @@
 </div></body></html><html><body><div style="background: url('file/./images/distill.jpg') center no-repeat;" class="slide" data-transition="none">
 <div class="content" ref="./slides/2">
 <h3>Engine Yard</h3>
+
+<p><br><br><br><br><br><br><br><br><br><br><br><br><br><br></p>
+
+<h2><code>distill.engineyard.com</code></h2>
+
+<h2>CFP closes Tuesday, April 9</h2>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/closeout.jpg') center no-repeat;" class="slide" data-transition="none">
 <div class="content black" ref="./slides/3">
@@ -110,50 +114,296 @@
 
 <p class="notes">Failure is a good thing. I want to spark conversations.</p>
 </div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/4">
-<h3>DRB is built-in</h3>
+</div></body></html><html><body><div style="background: url('file/./images/evan.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content moredarkness shadowh2" ref="./slides/4">
+<h3>Delayed::Job</h3>
 
-<h2>Queue Server</h2>
+<p><br><br><br><br><br><br><br><br><br><br><br><br><br></p>
 
-<pre class="sh_ruby"><code>require 'drb'
-DRb.start_service "druby://localhost:23121", []
-DRb.thread.join</code></pre>
+<h2>try this instead: (requires postgresql) <code>github.com/ryandotsmith/queue_classic</code>
+</h2>
+</div>
+</div></body></html><html><body><div style="background: url('file/./images/walking.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content shadowh2" ref="./slides/5">
+<h3>The End</h3>
 
-<h2>Push into the Q</h2>
+<h3>Questions?</h3>
+</div>
+</div></body></html><html><body><div style="background: url('file/./images/closeout.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content black" ref="./slides/6">
+<h3>Some things I'd like to tell you about background jobs</h3>
 
-<pre class="sh_ruby"><code>remote_q = DRbObject.new nil, "druby://localhost:23121"
-remote_q.push("some work")</code></pre>
+<p><br><br><br><br><br><br><br><br><br></p>
 
-<h2>Work it off</h2>
+<h2><code>jacobo.github.com/background_jobs</code></h2>
+</div>
+</div></body></html><html><body><div style="background: url('file/./images/peaches.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content moredarkness bullets incremental bigger-bullets" ref="./slides/7">
+<h3>3 Ingredients</h3>
 
-<pre class="sh_ruby"><code>remote_q = DRbObject.new nil, "druby://localhost:23121"
-while(work = remote_q.pop)
-  puts "doing #{work}"
-end</code></pre>
+<ul>
+<li>Work Loop</li>
+<li>Monitor / Restart</li>
+<li>Queue</li>
+</ul>
+</div>
+</div></body></html><html><body><div style="background: url('file/./images/maze.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content" ref="./slides/8">
+<h3>Loop</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/5">
-<h3>Use it for migrations</h3>
+<div class="content" ref="./slides/9">
+<h3>Resque Event Loop</h3>
 
-<pre class="sh_ruby"><code>m = MultiHeadedGreekMonster.new(nil, 3, 28371) do |f, w|
-  f.name = f.name + " improved"
-  f.save!
-end
-Face.all.each do |f|
-  monster.feed(f)
-end
-monster.finish</code></pre>
+<pre class="sh_ruby"><code>def work(interval = 5, &amp;block)
+  loop do
+    run_hook :before_fork, job
 
-<p><code>github.com/engineyard/multi_headed_greek_monster</code></p>
+    if @child = fork
+      procline "Forked #{@child} at #{Time.now.to_i}"
+      Process.wait
+    else
+      procline "Processing #{job.queue} since #{Time.now.to_i}"
+      perform(job, &amp;block)
+      exit! unless @cant_fork
+    end
+  end</code></pre>
+
+<p><code>github.com/defunkt/resque/blob/master/lib/resque/worker.rb</code></p>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/10">
+<h3>EventMachine</h3>
+
+<pre class="sh_c"><code>void EventMachine_t::Run()
+  //Epoll and Kqueue stuff..
+  ...
+
+  while (true) {
+    _UpdateTime();
+    _RunTimers();
+
+    _AddNewDescriptors();
+    _ModifyDescriptors();
+
+    _RunOnce();
+    if (bTerminateSignalReceived)
+      break;
+  }
+}</code></pre>
+
+<p><code>github.com/eventmachine/eventmachine/blob/master/ext/em.cpp</code></p>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/11">
+<h3>EM.next_tick</h3>
+
+<pre class="sh_ruby"><code>require 'eventmachine'
+EM.run {
+  EM.start_server(host, port, self)
+}
+
+EM.next_tick{ puts "do something" }</code></pre>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/12">
+<h3>Celluloid / Sidekiq</h3>
+
+<pre class="sh_ruby"><code>class Sidekiq::Manager
+  include Celluloid
+  ???
+
+class Sidekiq::Fetcher
+  include Celluloid
+  ???
+
+class Sidekiq::Processor
+  include Celluloid
+  ???</code></pre>
+
+<h1><code>sidekiq.org</code></h1>
+
+<h2><code>github.com/celluloid/celluloid</code></h2>
+</div>
+</div></body></html><html><body><div style="background: url('file/./images/riding.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content" ref="./slides/13">
+<h3>Monitoring</h3>
+
+<p class="notes">graceful restart
+.notes kill old dead things</p>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content align-left" ref="./slides/14">
+<h3>Resque Signals</h3>
+
+<h2>
+<code>QUIT</code> - Wait for child to finish then exit</h2>
+
+<h2>
+<code>TERM</code> / <code>INT</code> - Immediately kill child, exit</h2>
+
+<h2>
+<code>USR1</code> - Immediately kill child, don't exit</h2>
+
+<h2>
+<code>USR2</code> -Don't start to process new jobs</h2>
+
+<h2>
+<code>CONT</code> - Start to process new jobs again after a USR2</h2>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/15">
+<h3>Monitor with God</h3>
+
+<pre class="sh_ruby"><code>5.times do |n|
+  God.watch do |w|
+    w.name     = "resque-#{num}"
+    w.group    = 'resque'
+    w.interval = 30.seconds
+    w.log      = "#{app_root}/log/worker.#{num}.log"
+    w.dir      = app_root
+    w.env      = {
+      "GOD_WATCH"   =&gt; w.name,
+      "QUEUE"       =&gt; '*'
+    }
+    w.start    = "bundle exec rake --trace resque:work"
+  ...</code></pre>
+
+<h1><code>godrb.com</code></h1>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/16">
+<h3>Or Daemons</h3>
+
+<pre class="sh_ruby"><code>require 'daemons'
+
+options = {
+  :app_name =&gt; "worker",
+  :log_output =&gt; true,
+  :backtrace =&gt; true,
+  :dir_mode =&gt; :normal,
+  :dir =&gt; File.expand_path('../../tmp/pids',  __FILE__),
+  :log_dir =&gt; File.expand_path('../../log',  __FILE__),
+  :multiple =&gt; true,
+  :monitor =&gt; true
+}
+
+Daemons.run(File.expand_path('../worker',  __FILE__), options)</code></pre>
+
+<h1><code>daemons.rubyforge.org</code></h1>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/17">
+<h3>Or Don't?</h3>
+
+<p><img src="./file/./images/torquebox.jpg" alt=""></p>
+
+<h1><code>torquebox.org</code></h1>
+</div>
+</div></body></html><html><body><div style="background: url('file/./images/chris.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content" ref="./slides/18">
+<p>&#160;</p>
+</div>
+</div></body></html><html><body><div style="background: url('file/./images/lineup.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content" ref="./slides/19">
+<h3>Queue</h3>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/20">
+<h3>Thread-safe Queue</h3>
+
+<pre class="sh_ruby"><code>module BundlerApi
+  class ConsumerPool
+
+    def initialize
+      @queue = Queue.new
+    end
+
+    def enq(job)
+      @queue.enq(job)
+    end
+
+    ...
+      job = @queue.deq
+      job.run</code></pre>
+
+<p><code>github.com/rubygems/bundler-api/blob/master/lib/</code>
+<code>bundler_api/update/consumer_pool.rb</code></p>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/21">
+<h3>DRB objects</h3>
+
+<pre class="sh_ruby"><code>class MultiHeadedGreekMonster
+  class ServiceManager
+    def initialize(progress)
+      @things = []
+    end
+    def give(thing)
+      @things.unshift(thing)
+    end
+    def take
+      @things &amp;&amp; @things.pop
+    end
+
+...
+DRb.start_service "druby://localhost:#{@on_port}", 
+                  ServiceManager.new(@progress)</code></pre>
+
+<p><code>github.com/engineyard/multi_headed_greek_monster/blob/master/</code>
+<code>lib/multi_headed_greek_monster.rb</code></p>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/22">
+<h3>Qu Push/Pop Redis</h3>
+
+<pre class="sh_ruby"><code>payload.id = SimpleUUID::UUID.new.to_guid
+redis.set("job:#{payload.id}", 
+  encode('klass' =&gt; payload.klass.to_s, 
+         'args' =&gt; payload.args))
+redis.rpush("queue:#{payload.queue}", payload.id)
+redis.sadd('queues', payload.queue)
+
+...
+
+redis.lpop(queue)</code></pre>
+
+<p><code>github.com/bkeepers/qu/blob/master/lib/qu/backend/redis.rb</code></p>
+</div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/23">
+<h3>Qu Push/Pop Mongo</h3>
+
+<pre class="sh_ruby"><code>payload.id = SimpleUUID::UUID.new.to_guid
+payload.id = BSON::ObjectId.new
+jobs(payload.queue).insert({
+  '_id' =&gt; payload.id, 
+  'klass' =&gt; payload.klass.to_s, 'args' =&gt; payload.args})
+self[:queues].update({'name' =&gt; payload.queue}, 
+  {'name' =&gt; payload.queue}, 'upsert' =&gt; true)
+
+...
+
+if doc = jobs(queue).find_and_modify(:remove =&gt; true)
+  doc['id'] = doc.delete('_id')
+  return Payload.new(doc)
+end</code></pre>
+
+<p><code>github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb</code></p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/skimboard.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/6">
+<div class="content smallerh2 moredarkness" ref="./slides/24">
 <h3>Rails 4 Queuing</h3>
+
+<h4>(the 4th ingredient)</h4>
+
+<p><br><br><br><br><br><br><br><br><br><br><br><br><br><br></p>
+
+<h2><code>github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb</code></h2>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/7">
-<h3>Fail at the API</h3>
+<div class="content" ref="./slides/25">
+<h3>The API</h3>
 
 <pre class="sh_ruby"><code>class MyJob
 
@@ -170,13 +420,13 @@ end
 Rails.queue[:jobs].push(MyJob.new(account))</code></pre>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/marshal.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/8">
+<div class="content" ref="./slides/26">
 <h3>Fail at Serialization</h3>
 
 <p>&#160;</p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/9">
+<div class="content" ref="./slides/27">
 <h3>Solve the wrong problem</h3>
 
 <pre class="sh_ruby"><code>class BodyProxy
@@ -195,7 +445,7 @@ def call(env)
 end</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/10">
+<div class="content" ref="./slides/28">
 <h3>Will be <s><div></div>revisited</s> <br> re-written in 4.1</h3>
 
 <h2><code>github.com/rails/rails/pull/9910</code></h2>
@@ -203,71 +453,17 @@ end</code></pre>
 <h2><code>github.com/rails/rails/pull/9924</code></h2>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/skimboardfail.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/11">
+<div class="content" ref="./slides/29">
 <h3>Moving on...</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/12">
-<h3>Teeth</h3>
-
-<pre class="sh_ruby"><code>define_system(:us_child) do
-
-  common_name "Universal System for deciduous dentition"
-
-  upper_right "E", "D", "C", "B", "A"
-
-  upper_left  "J", "I", "H", "G", "F"
-
-  lower_right "P", "Q", "R", "S", "T"
-
-  lower_left  "K", "L", "M", "N", "O"
-
-end</code></pre>
-
-<h2><code>github.com/brontes3d/tooth_numbering</code></h2>
-
-<p class="notes">The theme of this section is doing it yourself. The lesson is to use the Q systems as intended and follow their best practices.</p>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/13">
+<div class="content" ref="./slides/30">
 <h3>2009</h3>
 
 <p><img src="./file/./images/3m-lava-chairside-oral-scanner.jpg" alt=""></p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/14">
-<h3>XMPP</h3>
-
-<h3>a.k.a. Jabber</h3>
-
-<h3>a Chat protocol</h3>
-
-<h2><code>xmpp.org/xmpp-protocols/xmpp-extensions</code></h2>
-
-<h2><code>github.com/djabberd/DJabberd</code></h2>
-
-<h2><code>github.com/brontes3d/xmpp4r</code></h2>
-
-<h2><code>github.com/brontes3d/xmpp_messaging</code></h2>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/15">
-<h3>Write your own clustering</h3>
-
-<pre class="sh_perl"><code>  my($mailbox, $private_group) = Spread::connect(
-    spread_name =&gt; '4444@host.domain.com');
-
-  Spread::multicast($mbox, SAFE_MESS, @joined_groups,
-    0, "Important Message");</code></pre>
-
-<p><code>search.cpan.org/~jesus/Spread-3.17.4.4/Spread.pm</code></p>
-
-<p><code>www.spread.org/docs/spread_docs_4/docs/message_types.html</code></p>
-
-<h2><code>rbspread.sourceforge.net</code></h2>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/16">
+<div class="content" ref="./slides/31">
 <h3>Starling, Workling</h3>
 
 <pre class="sh_ruby"><code>class FileCopier &lt; Workling::Base
@@ -286,13 +482,13 @@ Workling::Remote.dispatcher =
 script/workling_client run</code></pre>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/failwhale.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/17">
+<div class="content" ref="./slides/32">
 <p>&#160;</p>
 
 <p class="notes">Stolen from: http://www.subcide.com/experiments/fail-whale/</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/rabbitmq.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/18">
+<div class="content" ref="./slides/33">
 <p>&#160;</p>
 
 <p class="notes">http://www.rabbitmq.com/
@@ -300,7 +496,7 @@ script/workling_client run</code></pre>
 .notes so we made sore rabbit was sending and handling messages reliably because we were told this is a feature of rabbit. not because it's something we thought we needed.  In my experience, generally you have many more problems with message execution, than you do with message delivery.</p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/19">
+<div class="content" ref="./slides/34">
 <h3>AMQP</h3>
 
 <pre class="sh_ruby"><code>connection = AMQP.connect(:host =&gt; '127.0.0.1')
@@ -321,17 +517,17 @@ exchange.publish "Hello, world!",
 <h2><code>github.com/ruby-amqp/bunny</code></h2>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/worklingrunners.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/20">
+<div class="content" ref="./slides/35">
 <p>&#160;</p>
 
 <p class="notes">Brontes fork of workling at: https://github.com/brontes3d/workling</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/bug.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/21">
+<div class="content" ref="./slides/36">
 <h3>Little Bug</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/22">
+<div class="content" ref="./slides/37">
 <h3>ActiveRecord:: RecordNotFound</h3>
 
 <pre class="sh_ruby"><code>class Device &lt; ActiveRecord::Base
@@ -342,16 +538,13 @@ end
 
 class BackgroundJob
   def run(device_id)
+    #sleep 1 ?
     Device.find(device_id)
   end
 end</code></pre>
-
-<h2>
-<code>after_create</code> != <code>after_sql_commit</code>
-</h2>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/23">
+<div class="content" ref="./slides/38">
 <h3>Hack ActiveRecord</h3>
 
 <pre class="sh_ruby"><code>class Device &lt; ActiveRecord::Base
@@ -371,23 +564,24 @@ def commit_callback
 <h2><code>github.com/brontes3d/commit_callback</code></h2>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/manybugs.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/24">
+<div class="content moredarkness bullets incremental bigger-bullets" ref="./slides/39">
 <h3>More Bugs</h3>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/steep.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/25">
-<h3>Fundamental Flaw</h3>
 
+<p><br><br><br></p>
+
+<ul>
+<li>Fundamental Flaw</li>
+</ul>
 <p class="notes">generic abstractions are hard
 .notes poll vs. push
 .notes because workling controls the run loop, we couldn't easily mix with EM-based xmpp
 .notes spinning up (and down) an event machine every time you need to send a message is really crappy</p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/26">
+<div class="content" ref="./slides/40">
 <h3>Do it Yourself</h3>
 
-<pre class="sh_ruby"><code>class CaseFilesCopier &lt; AmqpListener::Listener
+<pre class="sh_ruby"><code>class FileCopier &lt; AmqpListener::Listener
   subscribes_to :case_file_copy_requests
 
   def handle(options)
@@ -395,7 +589,7 @@ def commit_callback
   end
 end
 
-CaseFilesCopier.notify(...)</code></pre>
+FileCopier.notify(...)</code></pre>
 
 <p>&#160;</p>
 
@@ -404,7 +598,7 @@ CaseFilesCopier.notify(...)</code></pre>
 <h2>github.com/brontes3d/amqp_listener</h2>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/27">
+<div class="content" ref="./slides/41">
 <h3>AMQP: Failover</h3>
 
 <pre class="sh_ruby"><code>def self.determine_reconnect_server(opts)
@@ -430,20 +624,8 @@ end</code></pre>
 
 <p class="notes">https://github.com/brontes3d/amqp/blob/master/lib/amqp/client.rb#L215</p>
 </div>
-</div></body></html><html><body><div style="background: url('file/./images/sunset.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content align-left" ref="./slides/28">
-<h3>Moment of Reflection</h3>
-
-<p><br><br><br><br><br><br><br><br><br><br><br><br><br></p>
-
-<h2>Did the tools fail us?</h2>
-
-<h2>Did we fail at using them?</h2>
-
-<p class="notes">stray from best practices leads to re-writing things from scratch. leads to being on an island</p>
-</div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content bullets incremental" ref="./slides/29">
+<div class="content bullets" ref="./slides/42">
 <h3>Reliability</h3>
 
 <ul>
@@ -455,14 +637,22 @@ end</code></pre>
 <li>Did it run? Did it fail? How? Where?</li>
 </ul>
 </div>
+</div></body></html><html><body><div style="background: url('file/./images/sunset.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content align-left" ref="./slides/43">
+<h3>Moment of Reflection</h3>
+
+<p class="notes">Did the tools fail us?
+.notes Did we fail at using them?
+.notes stray from best practices leads to re-writing things from scratch. leads to being on an island</p>
+</div>
 </div></body></html><html><body><div style="background: url('file/.//images/engineyardcloud.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/30">
+<div class="content" ref="./slides/44">
 <h3>Trains</h3>
 
 <h3>... and Resque</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/31">
+<div class="content" ref="./slides/45">
 <h3>Boot an EC2 Server</h3>
 
 <pre class="sh_ruby"><code>class InstanceProvision
@@ -483,7 +673,7 @@ end</code></pre>
     ...</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/32">
+<div class="content" ref="./slides/46">
 <h3>Extractable?</h3>
 
 <pre class="sh_ruby"><code>class InstanceProvision
@@ -504,7 +694,7 @@ end</code></pre>
     ...</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/33">
+<div class="content" ref="./slides/47">
 <h3>Generalizable?</h3>
 
 <pre class="sh_ruby"><code>class MethodCalling
@@ -526,7 +716,7 @@ class Instance
 end</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/34">
+<div class="content" ref="./slides/48">
 <h3>Async</h3>
 
 <pre class="sh_ruby"><code>require 'async'
@@ -545,19 +735,19 @@ end</code></pre>
 <h2><code>github.com/engineyard/async</code></h2>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/instancehang.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/35">
+<div class="content" ref="./slides/49">
 <p>&#160;</p>
 
 <p class="notes">We have customers complaining</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/resquehang.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/36">
+<div class="content" ref="./slides/50">
 <p>&#160;</p>
 
 <p class="notes">We would have jobs fail, and have to go in and read the code of this method body, and figure out where it failed... and try to fix it. But is the job still running? Did the job throw an exception?</p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/37">
+<div class="content" ref="./slides/51">
 <h3>Make a Resque Plugin</h3>
 
 <pre class="sh_ruby"><code>class InstanceProvision
@@ -577,7 +767,7 @@ end</code></pre>
 <h2><code>github.com/engineyard/resque-job-tracking</code></h2>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/38">
+<div class="content" ref="./slides/52">
 <h3>Helps a little?</h3>
 
 <pre class="sh_ruby"><code>InstanceProvision.pending_jobs("Instance:532")
@@ -585,11 +775,11 @@ end</code></pre>
 InstanceProvision.failed_jobs("Account:121")</code></pre>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/job_dependencies.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/39">
+<div class="content" ref="./slides/53">
 <h3>Jobs Dependencies</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/40">
+<div class="content" ref="./slides/54">
 <h3>Make another</h3>
 
 <pre class="sh_ruby"><code>class Sandwich
@@ -610,7 +800,7 @@ InstanceProvision.failed_jobs("Account:121")</code></pre>
 <h2><code>github.com/engineyard/resque-delegation</code></h2>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/41">
+<div class="content" ref="./slides/55">
 <h3>Desperation?</h3>
 
 <pre class="sh_ruby"><code>class ResqueJob &lt; ActiveRecord::Base
@@ -631,7 +821,7 @@ end</code></pre>
 ...</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/42">
+<div class="content" ref="./slides/56">
 <h3>Maybe we just need better logging?</h3>
 
 <h2><iframe width="640" height="360" src="http://www.youtube.com/embed/NpTT30wLL-w?rel=0" frameborder="0" allowfullscreen></iframe></h2>
@@ -639,25 +829,7 @@ end</code></pre>
 <h2><code>http://youtu.be/NpTT30wLL-w</code></h2>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/43">
-<h3>More Resque Plugins...</h3>
-
-<pre class="sh_ruby"><code>class MyJob
-  extend Resque::Plugins::UniqueJob
-
-  def self.perform(*args)
-    #do stuff
-  end
-end</code></pre>
-
-<h2><code>github.com/engineyard/resque-unique-job</code></h2>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/jimryan.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness" ref="./slides/44">
-<h3>How about Sidekiq?</h3>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/45">
+<div class="content" ref="./slides/57">
 <h3>Data belongs in a database (not redis)</h3>
 
 <pre class="sh_ruby"><code>class InstanceProvision &lt; ActiveRecord::Base
@@ -677,11 +849,13 @@ end</code></pre>
     ...</code></pre>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/josh.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness" ref="./slides/46">
+<div class="content moredarkness" ref="./slides/58">
 <h3>Model Intent</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/47">
+<div class="content" ref="./slides/59">
+<h1><code>requested_at</code></h1>
+
 <h1><code>started_at</code></h1>
 
 <h1><code>finished_at</code></h1>
@@ -689,7 +863,7 @@ end</code></pre>
 <h1><code>state</code></h1>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/48">
+<div class="content" ref="./slides/60">
 <h3>Idempotent</h3>
 
 <pre class="sh_ruby"><code>class InstanceProvision &lt; ActiveRecord::Base
@@ -708,15 +882,16 @@ end</code></pre>
     ...</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/49">
+<div class="content biggercode" ref="./slides/61">
 <h3>Redis locks</h3>
 
 <p>&#160;</p>
 
-<pre class="sh_ruby"><code>if redis.getset(@lock_name, "locked")
-  # lock aquired
+<pre class="sh_ruby"><code>if redis.setnx(@lock_name, "locked")
+  redis.expire(@lock_name, 600)
+  # lock aquired, proceed
 else
-  # lock aquisition failed
+  # lock failed, already locked
 end</code></pre>
 
 <p>&#160;</p>
@@ -725,7 +900,7 @@ end</code></pre>
 # lock released</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/50">
+<div class="content" ref="./slides/62">
 <h3>Async::Locked</h3>
 
 <pre class="sh_ruby"><code>require 'async'
@@ -734,241 +909,30 @@ require 'async/locked'
 Async.backend = ...
 Async::Locked.redis = ...
 
-class Invoice &lt; ActiveRecord::Base
-  def process(*args)
-    Async::Locked.run{ process_now(*args)}
+class Instance &lt; ActiveRecord::Base
+  def provision(*args)
+    Async::Locked.run{ provision_now(*args)}
   end
-  def process_now(*args)
+  def provision_now(*args)
     #actually do it
   end
 end</code></pre>
 
 <h2><code>github.com/engineyard/async</code></h2>
 </div>
-</div></body></html><html><body><div style="background: url('file/./images/peaches.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/51">
-<h3>Background Jobs <br> from Scratch</h3>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content bullets incremental bigger-bullets" ref="./slides/52">
-<h3>Ingredients</h3>
+</div></body></html><html><body><div style="background: url('file/./images/sunset3.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content align-left" ref="./slides/63">
+<h3>Moment of Reflection</h3>
 
-<ul>
-<li>Loop</li>
-<li>Monitor</li>
-<li>Restart</li>
-<li>Queue</li>
-</ul>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/maze.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/53">
-<h3>Loop</h3>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/54">
-<h3>Resque Event Loop</h3>
-
-<pre class="sh_ruby"><code>def work(interval = 5, &amp;block)
-  loop do
-    run_hook :before_fork, job
-
-    if @child = fork
-      procline "Forked #{@child} at #{Time.now.to_i}"
-      Process.wait
-    else
-      procline "Processing #{job.queue} since #{Time.now.to_i}"
-      perform(job, &amp;block)
-      exit! unless @cant_fork
-    end
-  end</code></pre>
-
-<p><code>github.com/defunkt/resque/blob/master/lib/resque/worker.rb</code></p>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/55">
-<h3>EventMachine</h3>
-
-<pre class="sh_c"><code>void EventMachine_t::Run()
-  //Epoll and Kqueue stuff..
-  ...
-
-  while (true) {
-    _UpdateTime();
-    _RunTimers();
-
-    _AddNewDescriptors();
-    _ModifyDescriptors();
-
-    _RunOnce();
-    if (bTerminateSignalReceived)
-      break;
-  }
-}</code></pre>
-
-<p><code>github.com/eventmachine/eventmachine/blob/master/ext/em.cpp</code></p>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/56">
-<h3>EM.next_tick</h3>
-
-<pre class="sh_ruby"><code>require 'eventmachine'
-EM.run {
-  EM.start_server(host, port, self)
-}
-
-EM.next_tick{ puts "do something" }</code></pre>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/57">
-<h3>Threads</h3>
-
-<pre class="sh_ruby"><code>class Sidekiq::Manager
-  include Celluloid
-  ???
-
-class Sidekiq::Fetcher
-  include Celluloid
-  ???
-
-class Sidekiq::Processor
-  include Celluloid
-  ???</code></pre>
-
-<h1><code>sidekiq.org</code></h1>
-
-<h2><code>github.com/celluloid/celluloid</code></h2>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/riding.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/58">
-<h3>Monitoring</h3>
-
-<p class="notes">graceful restart
-.notes kill old dead things</p>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/59">
-<h3>Monitor with God</h3>
-
-<pre class="sh_ruby"><code>5.times do |n|
-  God.watch do |w|
-    w.name     = "resque-#{num}"
-    w.group    = 'resque'
-    w.interval = 30.seconds
-    w.log      = "#{app_root}/log/worker.#{num}.log"
-    w.dir      = app_root
-    w.env      = {
-      "GOD_WATCH"   =&gt; w.name,
-      "QUEUE"       =&gt; '*'
-    }
-    w.start    = "bundle exec rake --trace resque:work"
-  ...</code></pre>
-
-<h1><code>godrb.com</code></h1>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/60">
-<h3>Or Daemons</h3>
-
-<pre class="sh_ruby"><code>require 'daemons'
-
-options = {
-  :app_name =&gt; "worker",
-  :log_output =&gt; true,
-  :backtrace =&gt; true,
-  :dir_mode =&gt; :normal,
-  :dir =&gt; File.expand_path('../../tmp/pids',  __FILE__),
-  :log_dir =&gt; File.expand_path('../../log',  __FILE__),
-  :multiple =&gt; true,
-  :monitor =&gt; true
-}
-
-Daemons.run(File.expand_path('../worker',  __FILE__), options)</code></pre>
-
-<h1><code>daemons.rubyforge.org</code></h1>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/61">
-<h3>Or Don't?</h3>
-
-<p><img src="./file/./images/torquebox.jpg" alt=""></p>
-
-<h1><code>torquebox.org</code></h1>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/chris.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/62">
-<p>&#160;</p>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/paddleout.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/63">
-<h3>Restart</h3>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content align-left" ref="./slides/64">
-<h3>Resque Signals</h3>
-
-<h2>
-<code>QUIT</code> - Wait for child to finish then exit</h2>
-
-<h2>
-<code>TERM</code> / <code>INT</code> - Immediately kill child, exit</h2>
-
-<h2>
-<code>USR1</code> - Immediately kill child, don't exit</h2>
-
-<h2>
-<code>USR2</code> -Don't start to process new jobs</h2>
-
-<h2>
-<code>CONT</code> - Start to process new jobs again after a USR2</h2>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/lineup.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/65">
-<h3>Queue</h3>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/66">
-<h3>Qu Push/Pop Redis</h3>
-
-<pre class="sh_ruby"><code>payload.id = SimpleUUID::UUID.new.to_guid
-redis.set("job:#{payload.id}", 
-  encode('klass' =&gt; payload.klass.to_s, 
-         'args' =&gt; payload.args))
-redis.rpush("queue:#{payload.queue}", payload.id)
-redis.sadd('queues', payload.queue)
-
-...
-
-redis.lpop(queue)</code></pre>
-
-<p><code>github.com/bkeepers/qu/blob/master/lib/qu/backend/redis.rb</code></p>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/67">
-<h3>Qu Push/Pop Mongo</h3>
-
-<pre class="sh_ruby"><code>payload.id = SimpleUUID::UUID.new.to_guid
-payload.id = BSON::ObjectId.new
-jobs(payload.queue).insert({
-  '_id' =&gt; payload.id, 
-  'klass' =&gt; payload.klass.to_s, 'args' =&gt; payload.args})
-self[:queues].update({'name' =&gt; payload.queue}, 
-  {'name' =&gt; payload.queue}, 'upsert' =&gt; true)
-
-...
-
-if doc = jobs(queue).find_and_modify(:remove =&gt; true)
-  doc['id'] = doc.delete('_id')
-  return Payload.new(doc)
-end</code></pre>
-
-<p><code>github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb</code></p>
+<p class="notes">at 3M we fixed our problems by making the Queuing system smarter.
+.notes I tried to do this at EY and failed, so we fixed out problems by using a dumber Q and smarter business logic</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/handstands.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/68">
+<div class="content" ref="./slides/64">
 <h3>All Together</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/69">
+<div class="content" ref="./slides/65">
 <h2><code>script/invoice_worker</code></h2>
 
 <pre class="sh_ruby"><code>#!/usr/bin/env ruby
@@ -976,7 +940,7 @@ require File.expand_path('../../config/environment',
   __FILE__)
 
 TrapLoop.start do
-  Worker.work!
+  InvoiceProcessingTask.process_invoices!
 end</code></pre>
 
 <h2><code>script/invoice_runner start</code></h2>
@@ -987,7 +951,7 @@ end</code></pre>
 Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/70">
+<div class="content" ref="./slides/66">
 <pre class="sh_ruby"><code>class TrapLoop
   trap('TERM') { stop! }
   trap('INT')  { stop! }
@@ -1012,7 +976,7 @@ Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
   end</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/71">
+<div class="content" ref="./slides/67">
 <pre class="sh_ruby"><code>class InvoiceProcessingTask
   def self.enq_task(task_id, invoice_id)
     REDIS.rpush("tasks:#{invoice_id}", task_id)
@@ -1035,49 +999,18 @@ Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
     end
   end</code></pre>
 </div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/72">
-<h3>Even Resque maintainers don't always use Resque</h3>
-
-<pre class="sh_ruby"><code>module BundlerApi
-  class ConsumerPool
-
-    def enq(job)
-      @queue.enq(job)
-    end
-
-    def create_thread
-      Thread.new {
-        loop do
-          job = @queue.deq
-          job.run</code></pre>
-
-<p class="notes">https://github.com/hone/bundler-api-replay/blob/master/lib/bundler<em>api/consumer</em>pool.rb</p>
-</div>
 </div></body></html><html><body><div style="background: url('file/./images/sunset2.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/73">
-<h3>Conclusions</h3>
-</div>
-</div></body></html><html><body><div style="background: url('file/./images/evan.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness shadowh2" ref="./slides/74">
-<h3>Avoid Delayed::Job</h3>
-
-<p><br><br><br><br><br><br><br><br><br><br><br><br><br><br></p>
-
-<h2><code>github.com/ryandotsmith/queue_classic</code></h2>
-</div>
-</div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content bullets incremental" ref="./slides/75">
+<div class="content moredarkness incremental bullets biggish-bullets bigger-bullets" ref="./slides/68">
 <h3>Conclusions</h3>
 
 <ul>
-<li>Know your tools and their limitations</li>
+<li>Know your how your tools work</li>
 <li>Model important jobs in your domain</li>
 <li>Contribute to Resque</li>
 </ul>
 </div>
-</div></body></html><html><body><div style="background: url('file/./images/walking.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content shadowh2" ref="./slides/76">
+</div></body></html><html><body><div style="background: url('file/./images/mudbath.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content shadowh2" ref="./slides/69">
 <h3>Questions?</h3>
 
 <p><br><br><br><br><br><br><br><br><br><br><br><br></p>

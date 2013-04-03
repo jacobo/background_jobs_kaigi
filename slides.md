@@ -5,14 +5,6 @@
 <br/><br/><br/><br/><br/>
 ## @beanstalksurf
 
-!SLIDE[bg=images/distill.jpg]
-### Engine Yard
-<br/><br/><br/><br/>
-<br/><br/><br/><br/><br/>
-<br/><br/><br/><br/><br/>
-## `distill.engineyard.com`
-## CFP closes Tuesday, April 9
-
 !SLIDE[bg=images/closeout.jpg] black
 ### How to Fail at Background Jobs
 ## `jacobo.github.com/background_jobs`
@@ -27,16 +19,460 @@
 
 ## try this instead: (requires postgresql) `github.com/ryandotsmith/queue_classic`
 
-!SLIDE[bg=images/walking.jpg] shadowh2
+!SLIDE[bg=images/distill.jpg]
 ### The End
-### Questions?
+<br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
+## `distill.engineyard.com`
+## CFP closes Tuesday, April 9
 
 !SLIDE[bg=images/closeout.jpg] black
-### Some things I'd like to tell you about background jobs
-<br/><br/><br/>
-<br/><br/><br/>
+### A personal history of attempting to make background jobs work better and only being sorta-OK at it
 <br/><br/><br/>
 ## `jacobo.github.com/background_jobs`
+
+!SLIDE[bg=images/skimboard.jpg] smallerh2 moredarkness
+### Rails 4 Queuing
+<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+## `github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb`
+
+!SLIDE
+### The API
+
+    @@@ ruby
+    class MyJob
+
+      def initialize(account)
+        @account = account
+      end
+
+      def run
+        puts "working on #{@account.name}..."
+      end
+
+    end
+
+    Rails.queue[:jobs].push(MyJob.new(account))
+
+!SLIDE[bg=images/marshal.png]
+### Fail at Serialization
+&nbsp;
+
+!SLIDE
+### Solve the wrong problem
+
+    @@@ ruby
+    class BodyProxy
+      def each
+        @body.each{|x| yield x}
+        while(email = CleverMailer.emails_to_send.pop)
+          email.deliver
+        end
+      end
+    end
+
+    def call(env)
+      status, headers, body = @app.call(env)
+      headers["Content-Length"] = body.map(&:bytesize).sum
+      [status, headers, BodyProxy.new(body)]
+    end
+
+!SLIDE
+### Will be <s><div></div>revisited</s> <br/> re-written in 4.1
+
+## `github.com/rails/rails/pull/9910`
+## `github.com/rails/rails/pull/9924`
+
+!SLIDE[bg=images/skimboardfail.jpg]
+### Moving on...
+
+!SLIDE
+### 2009
+
+![](images/3m-lava-chairside-oral-scanner.jpg)
+
+!SLIDE
+### Starling, Workling
+
+    @@@ ruby
+    class FileCopier < Workling::Base
+      def copy_case_files(options)
+        ...
+      end
+    end
+    FileCopier.async_copy_case_files(...)
+
+    Workling::Remote.dispatcher = 
+      Workling::Remote::Runners::StarlingRunner.new
+
+&nbsp;
+
+    @@@ ruby
+    starling -f config/starling.yml
+    script/workling_client run
+
+!SLIDE[bg=images/failwhale.png]
+&nbsp;
+
+.notes Stolen from: http://www.subcide.com/experiments/fail-whale/
+
+!SLIDE[bg=images/rabbitmq.png]
+&nbsp;
+
+.notes http://www.rabbitmq.com/
+.notes "Robust" only when you setup your queues and topics and exchanges correctly, and set them to be durable, and send durable messages, and send acks.
+.notes so we made sore rabbit was sending and handling messages reliably because we were told this is a feature of rabbit. not because it's something we thought we needed.  In my experience, generally you have many more problems with message execution, than you do with message delivery.
+
+!SLIDE
+### AMQP
+
+    @@@ ruby
+    connection = AMQP.connect(:host => '127.0.0.1')
+
+    channel  = AMQP::Channel.new(connection)
+    queue    = channel.queue("some.q")
+    exchange = channel.default_exchange
+
+    queue.subscribe do |payload|
+      puts "Received a message: #{payload}"
+    end
+
+    exchange.publish "Hello, world!", 
+                     :routing_key => queue.name
+
+## `github.com/ruby-amqp/amqp`
+## `github.com/ruby-amqp/bunny`
+
+!SLIDE[bg=images/worklingrunners.png]
+&nbsp;
+
+.notes Brontes fork of workling at: https://github.com/brontes3d/workling
+
+!SLIDE[bg=images/bug.jpg]
+### Little Bug
+
+!SLIDE
+### ActiveRecord:: RecordNotFound
+
+    @@@ ruby
+    class Device < ActiveRecord::Base
+      after_create do |d|
+        BackgroundJob.async_run(d.id)
+      end
+    end
+
+    class BackgroundJob
+      def run(device_id)
+        #sleep 1 ?
+        Device.find(device_id)
+      end
+    end
+
+
+!SLIDE
+### Hack ActiveRecord
+
+    @@@ ruby
+    class Device < ActiveRecord::Base
+      after_create do |d|
+        d.commit_callback do
+          BackgroundJob.async_run(d.id)
+        end
+      end
+    end
+
+    ...
+    def commit_callback
+      self.connection.instance_eval do
+        class << self
+          alias commit_db_transaction_original commit_db_transaction
+          ...
+
+## `github.com/brontes3d/commit_callback`
+
+.notes probably only works with rails 2.3 etc...
+
+!SLIDE[bg=images/manybugs.jpg] moredarkness bullets incremental bigger-bullets
+### More Bugs
+<br/><br/><br/>
+
+* Fundamental Flaw
+
+.notes generic abstractions are hard
+.notes poll vs. push
+.notes because workling controls the run loop, we couldn't easily mix with EM-based xmpp
+.notes spinning up (and down) an event machine every time you need to send a message is really crappy
+
+!SLIDE
+### Do it Yourself
+
+    @@@ ruby
+    class FileCopier < AmqpListener::Listener
+      subscribes_to :case_file_copy_requests
+
+      def handle(options)
+        ...
+      end
+    end
+
+    FileCopier.notify(...)
+
+&nbsp;
+
+    @@@ ruby
+    script/amqp_listener run
+
+## github.com/brontes3d/amqp_listener
+
+!SLIDE[bg=images/sunset.jpg] align-left
+### Moment of Reflection
+
+.notes Did the tools fail us?
+.notes Did we fail at using them?
+.notes stray from best practices leads to re-writing things from scratch. leads to being on an island
+
+!SLIDE[bg=/images/engineyardcloud.png]
+### Trains
+### ... and Resque
+
+!SLIDE
+### Boot an EC2 Server
+
+    @@@ ruby
+    class InstanceProvision
+
+      def self.perform(instance_id)
+        instance = Instance.find(instance_id)
+
+        fog = Fog::Compute.new(...)
+        server = fog.servers.create(...)
+        instance.amazon_id = server.id
+
+        while(!server.ready?)
+          sleep 1
+          server.reload
+        end
+
+        instance.attach_ip!
+        ...
+
+!SLIDE
+### Extractable?
+
+    @@@ ruby
+    class InstanceProvision
+
+      def self.perform(aws_creds, create_params, callback_url)
+        fog = Fog::Compute.new(aws_creds)
+        server = fog.servers.create(create_params)
+        API.post(callback_url, :instance_amazon_id => server.id)
+
+        while(!server.ready?)
+          sleep 1
+          server.reload
+        end
+
+        ip = fog.ips.create!
+        ip.server = server
+        API.post(callback_url, :attached_ip_amazon_id => ip.id)
+        ...
+
+!SLIDE
+### Generalizable?
+
+    @@@ ruby
+    class MethodCalling
+      def self.perform(class_str, method, id, *args)
+        model_class = Object.const_get(class_str)
+        model = model_class.find(id)
+        model.send(method, *args)
+      end
+    end
+
+    class Instance
+      def provision
+        Resque.enqueue(MethodCalling, Instance, :provision!, id)
+      end
+
+      def provision!
+        #actually do it
+      end
+    end
+
+!SLIDE
+### Async
+
+    @@@ ruby
+    require 'async'
+    require 'async/resque'
+    Async.backend = Async::ResqueBackend
+
+    class Instance < ActiveRecord::Base
+      def provision(*args)
+        Async.run{ provision_now(*args)}
+      end
+      def provision_now(*args)
+        #actually do it
+      end
+    end
+
+## `github.com/engineyard/async`
+
+!SLIDE[bg=images/instancehang.png]
+&nbsp;
+
+.notes We have customers complaining
+
+!SLIDE[bg=images/resquehang.png]
+&nbsp;
+
+.notes We would have jobs fail, and have to go in and read the code of this method body, and figure out where it failed... and try to fix it. But is the job still running? Did the job throw an exception?
+
+
+!SLIDE bullets
+### Reliability
+* Retry (raise, crash, hang). Time-out
+* Reliable Queue vs Reliable Job
+* Monitor / Maintain N workers
+* Kill / Restart workers
+* Run only once / no-more-than once
+* Did it run? Did it fail? How? Where?
+
+!SLIDE
+### Make a Resque Plugin
+
+    @@@ ruby
+    class InstanceProvision
+      extend Resque::Plugins::JobTracking
+
+      def self.track(instance_id, opts)
+        i = Instance.find(instance_id)
+        ["Account:#{i.account_id}",
+         "Instance:#{instance_id}"]
+      end
+
+      def self.perform(instance_id, opts)
+        #do stuff
+      end
+    end
+
+## `github.com/engineyard/resque-job-tracking`
+
+!SLIDE
+### Helps a little?
+
+    @@@ ruby
+    InstanceProvision.pending_jobs("Instance:532")
+
+    InstanceProvision.failed_jobs("Account:121")
+
+!SLIDE[bg=images/job_dependencies.png]
+### Jobs Dependencies
+
+!SLIDE
+### Make another
+
+    @@@ ruby
+    class Sandwich
+      extend Resque::Plugins::Delegation
+
+      def self.steps(tomato_color, cheese_please, cheesemaker)
+        step "fetch a", :tomato do
+          depend_on(Tomato, tomato_color)
+        end
+        step "slice the ", :tomato, " and make", :tomato_slices do |tomato|
+          tomato.split(",")
+        end
+        step "fetch the", :cheese_slices do
+          if cheese_please
+            depend_on(Cheese, cheesemaker)
+            ...
+
+## `github.com/engineyard/resque-delegation`
+
+!SLIDE
+### Desperation?
+
+    @@@ ruby
+    class ResqueJob < ActiveRecord::Base
+    end
+
+&nbsp;
+
+    @@@ ruby
+    class AbstractJob
+
+      def self.store_meta(meta)
+        meta_id = meta["meta_id"]
+        ResqueJob.create!(meta.slice(
+          "meta_id", "job_class",
+          "enqueued_at", "started_at", "finished_at"))
+        super(meta)
+      end
+
+    ...
+
+!SLIDE
+### Maybe we just need better logging?
+
+<h2><iframe width="640" height="360" src="http://www.youtube.com/embed/NpTT30wLL-w?rel=0" frameborder="0" allowfullscreen></iframe></h2>
+
+## `http://youtu.be/NpTT30wLL-w`
+
+!SLIDE[bg=images/josh.jpg] moredarkness
+### Model Intent
+
+!SLIDE
+### Data belongs in a database (not redis)
+
+    @@@ ruby
+    class InstanceProvision < ActiveRecord::Base
+      belongs_to :instance
+
+      def run(instance_id)
+        fog = Fog::Compute.new(...)
+        server = fog.servers.create(...)
+        instance.amazon_id = server.id
+
+        while(!server.ready?)
+          sleep 1
+          server.reload
+        end
+
+        instance.attach_ip!
+        ...
+
+!SLIDE
+# `requested_at`
+# `started_at`
+# `finished_at`
+# `state`
+
+!SLIDE
+### Idempotent
+
+    @@@ ruby
+    class InstanceProvision < ActiveRecord::Base
+      belongs_to :instance
+
+      def run(instance_id)
+        with_lock do
+          if self.state == "running"
+            raise
+          else
+            self.state = "running"
+            self.started_at = Time.now
+            save!
+          end
+        end
+        ...
+
+!SLIDE[bg=images/sunset3.jpg] align-left
+### Moment of Reflection
+
+.notes at 3M we fixed our problems by making the Queuing system smarter.
+.notes I tried to do this at EY and failed, so we fixed out problems by using a dumber Q and smarter business logic
 
 !SLIDE[bg=images/peaches.jpg] moredarkness bullets incremental bigger-bullets
 ### 3 Ingredients
@@ -277,512 +713,6 @@
 
 `github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb`
 
-!SLIDE[bg=images/skimboard.jpg] smallerh2 moredarkness
-### Rails 4 Queuing
-#### (the 4th ingredient)
-<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
-## `github.com/rails/rails/commit/f9da785d0b1b22317cfca25c15fb555e9016accb`
-
-!SLIDE
-### The API
-
-    @@@ ruby
-    class MyJob
-
-      def initialize(account)
-        @account = account
-      end
-
-      def run
-        puts "working on #{@account.name}..."
-      end
-
-    end
-
-    Rails.queue[:jobs].push(MyJob.new(account))
-
-!SLIDE[bg=images/marshal.png]
-### Fail at Serialization
-&nbsp;
-
-!SLIDE
-### Solve the wrong problem
-
-    @@@ ruby
-    class BodyProxy
-      def each
-        @body.each{|x| yield x}
-        while(email = CleverMailer.emails_to_send.pop)
-          email.deliver
-        end
-      end
-    end
-
-    def call(env)
-      status, headers, body = @app.call(env)
-      headers["Content-Length"] = body.map(&:bytesize).sum
-      [status, headers, BodyProxy.new(body)]
-    end
-
-!SLIDE
-### Will be <s><div></div>revisited</s> <br/> re-written in 4.1
-
-## `github.com/rails/rails/pull/9910`
-## `github.com/rails/rails/pull/9924`
-
-!SLIDE[bg=images/skimboardfail.jpg]
-### Moving on...
-
-!SLIDE
-### 2009
-
-![](images/3m-lava-chairside-oral-scanner.jpg)
-
-!SLIDE
-### Starling, Workling
-
-    @@@ ruby
-    class FileCopier < Workling::Base
-      def copy_case_files(options)
-        ...
-      end
-    end
-    FileCopier.async_copy_case_files(...)
-
-    Workling::Remote.dispatcher = 
-      Workling::Remote::Runners::StarlingRunner.new
-
-&nbsp;
-
-    @@@ ruby
-    starling -f config/starling.yml
-    script/workling_client run
-
-!SLIDE[bg=images/failwhale.png]
-&nbsp;
-
-.notes Stolen from: http://www.subcide.com/experiments/fail-whale/
-
-!SLIDE[bg=images/rabbitmq.png]
-&nbsp;
-
-.notes http://www.rabbitmq.com/
-.notes "Robust" only when you setup your queues and topics and exchanges correctly, and set them to be durable, and send durable messages, and send acks.
-.notes so we made sore rabbit was sending and handling messages reliably because we were told this is a feature of rabbit. not because it's something we thought we needed.  In my experience, generally you have many more problems with message execution, than you do with message delivery.
-
-!SLIDE
-### AMQP
-
-    @@@ ruby
-    connection = AMQP.connect(:host => '127.0.0.1')
-
-    channel  = AMQP::Channel.new(connection)
-    queue    = channel.queue("some.q")
-    exchange = channel.default_exchange
-
-    queue.subscribe do |payload|
-      puts "Received a message: #{payload}"
-    end
-
-    exchange.publish "Hello, world!", 
-                     :routing_key => queue.name
-
-## `github.com/ruby-amqp/amqp`
-## `github.com/ruby-amqp/bunny`
-
-!SLIDE[bg=images/worklingrunners.png]
-&nbsp;
-
-.notes Brontes fork of workling at: https://github.com/brontes3d/workling
-
-!SLIDE[bg=images/bug.jpg]
-### Little Bug
-
-!SLIDE
-### ActiveRecord:: RecordNotFound
-
-    @@@ ruby
-    class Device < ActiveRecord::Base
-      after_create do |d|
-        # enqueue BackgroundJob with d.id
-      end
-    end
-
-    class BackgroundJob
-      def run(device_id)
-        #sleep 1 ?
-        Device.find(device_id)
-      end
-    end
-
-
-!SLIDE
-### Hack ActiveRecord
-
-    @@@ ruby
-    class Device < ActiveRecord::Base
-      after_create do |d|
-        d.commit_callback do
-          # enqueue BackgroundJob with d.id
-        end
-      end
-    end
-
-    def commit_callback
-      self.connection.instance_eval do
-        class << self
-          alias commit_db_transaction_original_for_commit_callback_hook commit_db_transaction
-          ...
-
-
-## `github.com/brontes3d/commit_callback`
-
-!SLIDE[bg=images/manybugs.jpg] moredarkness bullets incremental bigger-bullets
-### More Bugs
-<br/><br/><br/>
-
-* Fundamental Flaw
-
-.notes generic abstractions are hard
-.notes poll vs. push
-.notes because workling controls the run loop, we couldn't easily mix with EM-based xmpp
-.notes spinning up (and down) an event machine every time you need to send a message is really crappy
-
-!SLIDE
-### Do it Yourself
-
-    @@@ ruby
-    class FileCopier < AmqpListener::Listener
-      subscribes_to :case_file_copy_requests
-
-      def handle(options)
-        ...
-      end
-    end
-
-    FileCopier.notify(...)
-
-&nbsp;
-
-    @@@ ruby
-    script/amqp_listener run
-
-## github.com/brontes3d/amqp_listener
-
-!SLIDE
-### AMQP: Failover
-
-    @@@ ruby
-    def self.determine_reconnect_server(opts)
-      try_host = opts[:host]
-      try_port = opts[:port]
-      @retry_count ||= 0
-      if opts[:max_retry] && @retry_count >= opts[:max_retry]
-        raise "max_retry (#{@retry_count}) reached, disconnecting"
-      end
-      if srv_list = opts[:fallback_servers]
-        @server_to_select ||= 0
-        idex = @server_to_select % (srv_list.size + 1)
-        if idex != 0
-          try = srv_list[idex - 1]
-          try_host = try[:host] || AMQP.settings[:host]
-          try_port = try[:port] || AMQP.settings[:port]
-        end
-        @server_to_select += 1
-      end      
-      @retry_count += 1
-      [try_host, try_port]
-    end
-
-.notes https://github.com/brontes3d/amqp/blob/master/lib/amqp/client.rb#L215
-
-!SLIDE bullets
-### Reliability
-* Retry (raise, crash, hang). Time-out
-* Reliable Queue vs Reliable Job
-* Monitor / Maintain N workers
-* Kill / Restart workers
-* Run only once / no-more-than once
-* Did it run? Did it fail? How? Where?
-
-!SLIDE[bg=images/sunset.jpg] align-left
-### Moment of Reflection
-
-.notes Did the tools fail us?
-.notes Did we fail at using them?
-.notes stray from best practices leads to re-writing things from scratch. leads to being on an island
-
-!SLIDE[bg=/images/engineyardcloud.png]
-### Trains
-### ... and Resque
-
-!SLIDE
-### Boot an EC2 Server
-
-    @@@ ruby
-    class InstanceProvision
-
-      def self.perform(instance_id)
-        instance = Instance.find(instance_id)
-
-        fog = Fog::Compute.new(...)
-        server = fog.servers.create(...)
-        instance.amazon_id = server.id
-
-        while(!server.ready?)
-          sleep 1
-          server.reload
-        end
-
-        instance.attach_ip!
-        ...
-
-!SLIDE
-### Extractable?
-
-    @@@ ruby
-    class InstanceProvision
-
-      def self.perform(aws_creds, create_params, callback_url)
-        fog = Fog::Compute.new(aws_creds)
-        server = fog.servers.create(create_params)
-        API.post(callback_url, :instance_amazon_id => server.id)
-
-        while(!server.ready?)
-          sleep 1
-          server.reload
-        end
-
-        ip = fog.ips.create!
-        ip.server = server
-        API.post(callback_url, :attached_ip_amazon_id => ip.id)
-        ...
-
-!SLIDE
-### Generalizable?
-
-    @@@ ruby
-    class MethodCalling
-      def self.perform(class_str, method, id, *args)
-        model_class = Object.const_get(class_str)
-        model = model_class.find(id)
-        model.send(method, *args)
-      end
-    end
-
-    class Instance
-      def provision
-        Resque.enqueue(MethodCalling, Instance, :provision!, id)
-      end
-
-      def provision!
-        #actually do it
-      end
-    end
-
-!SLIDE
-### Async
-
-    @@@ ruby
-    require 'async'
-    require 'async/resque'
-    Async.backend = Async::ResqueBackend
-
-    class Instance < ActiveRecord::Base
-      def provision(*args)
-        Async.run{ provision_now(*args)}
-      end
-      def provision_now(*args)
-        #actually do it
-      end
-    end
-
-## `github.com/engineyard/async`
-
-!SLIDE[bg=images/instancehang.png]
-&nbsp;
-
-.notes We have customers complaining
-
-!SLIDE[bg=images/resquehang.png]
-&nbsp;
-
-.notes We would have jobs fail, and have to go in and read the code of this method body, and figure out where it failed... and try to fix it. But is the job still running? Did the job throw an exception?
-
-!SLIDE
-### Make a Resque Plugin
-
-    @@@ ruby
-    class InstanceProvision
-      extend Resque::Plugins::JobTracking
-
-      def self.track(instance_id, opts)
-        i = Instance.find(instance_id)
-        ["Account:#{i.account_id}",
-         "Instance:#{instance_id}"]
-      end
-
-      def self.perform(instance_id, opts)
-        #do stuff
-      end
-    end
-
-## `github.com/engineyard/resque-job-tracking`
-
-!SLIDE
-### Helps a little?
-
-    @@@ ruby
-    InstanceProvision.pending_jobs("Instance:532")
-
-    InstanceProvision.failed_jobs("Account:121")
-
-!SLIDE[bg=images/job_dependencies.png]
-### Jobs Dependencies
-
-!SLIDE
-### Make another
-
-    @@@ ruby
-    class Sandwich
-      extend Resque::Plugins::Delegation
-
-      def self.steps(tomato_color, cheese_please, cheesemaker)
-        step "fetch a", :tomato do
-          depend_on(Tomato, tomato_color)
-        end
-        step "slice the ", :tomato, " and make", :tomato_slices do |tomato|
-          tomato.split(",")
-        end
-        step "fetch the", :cheese_slices do
-          if cheese_please
-            depend_on(Cheese, cheesemaker)
-            ...
-
-## `github.com/engineyard/resque-delegation`
-
-!SLIDE
-### Desperation?
-
-    @@@ ruby
-    class ResqueJob < ActiveRecord::Base
-    end
-
-&nbsp;
-
-    @@@ ruby
-    class AbstractJob
-
-      def self.store_meta(meta)
-        meta_id = meta["meta_id"]
-        ResqueJob.create!(meta.slice(
-          "meta_id", "job_class",
-          "enqueued_at", "started_at", "finished_at"))
-        super(meta)
-      end
-
-    ...
-
-!SLIDE
-### Maybe we just need better logging?
-
-<h2><iframe width="640" height="360" src="http://www.youtube.com/embed/NpTT30wLL-w?rel=0" frameborder="0" allowfullscreen></iframe></h2>
-
-## `http://youtu.be/NpTT30wLL-w`
-
-!SLIDE
-### Data belongs in a database (not redis)
-
-    @@@ ruby
-    class InstanceProvision < ActiveRecord::Base
-      belongs_to :instance
-
-      def run(instance_id)
-        fog = Fog::Compute.new(...)
-        server = fog.servers.create(...)
-        instance.amazon_id = server.id
-
-        while(!server.ready?)
-          sleep 1
-          server.reload
-        end
-
-        instance.attach_ip!
-        ...
-
-!SLIDE[bg=images/josh.jpg] moredarkness
-### Model Intent
-
-!SLIDE
-# `requested_at`
-# `started_at`
-# `finished_at`
-# `state`
-
-!SLIDE
-### Idempotent
-
-    @@@ ruby
-    class InstanceProvision < ActiveRecord::Base
-      belongs_to :instance
-
-      def run(instance_id)
-        with_lock do
-          if self.state == "running"
-            raise
-          else
-            self.state = "running"
-            self.started_at = Time.now
-            save!
-          end
-        end
-        ...
-
-!SLIDE biggercode
-### Redis locks
-
-&nbsp;
-
-    @@@ ruby
-    if redis.setnx(@lock_name, "locked")
-      redis.expire(@lock_name, 600)
-      # lock aquired, proceed
-    else
-      # lock failed, already locked
-    end
-
-&nbsp;
-
-    @@@ ruby
-    redis.del(@lock_name)
-    # lock released
-
-!SLIDE
-### Async::Locked
-
-    @@@ ruby
-    require 'async'
-    require 'async/resque'
-    require 'async/locked'
-    Async.backend = ...
-    Async::Locked.redis = ...
-
-    class Instance < ActiveRecord::Base
-      def provision(*args)
-        Async::Locked.run{ provision_now(*args)}
-      end
-      def provision_now(*args)
-        #actually do it
-      end
-    end
-
-## `github.com/engineyard/async`
-
-!SLIDE[bg=images/sunset3.jpg] align-left
-### Moment of Reflection
-
-.notes at 3M we fixed our problems by making the Queuing system smarter.
-.notes I tried to do this at EY and failed, so we fixed out problems by using a dumber Q and smarter business logic
 
 !SLIDE[bg=images/handstands.jpg]
 ### All Together
