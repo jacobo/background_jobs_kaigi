@@ -104,7 +104,7 @@
 
 <h2><a href="http://jacobo.github.com/background_jobs"><code>jacobo.github.com/background_jobs</code></a></h2>
 
-<p class="notes">Failure is a good thing. I want to spark conversations.</p>
+<p class="notes">Failure is a good thing. We more from failure than success.</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/evan.jpg') center no-repeat;" class="slide" data-transition="none">
 <div class="content moredarkness shadowh2" ref="./slides/3">
@@ -158,6 +158,9 @@
 end
 
 Rails.queue[:jobs].push(MyJob.new(account))</code></pre>
+
+<p class="notes">Rails core says this is a failure because the Q name is in the caller instead of being defined in the job
+.notes I say this is a fail because this API places terrible constraints and limitations on backend integrators</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/marshal.png') center no-repeat;" class="slide" data-transition="none">
 <div class="content" ref="./slides/8">
@@ -956,11 +959,13 @@ Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
 <div class="content shadowh2" ref="./slides/66">
 <h3>Questions?</h3>
 
-<p><br><br><br><br><br><br><br><br><br><br><br><br></p>
+<p><br><br><br><br><br><br><br><br><br><br></p>
 
 <h2><a href="http://jacobo.github.com/background_jobs"><code>jacobo.github.com/background_jobs</code></a></h2>
 
 <h2><a href="http://twitter.com/beanstalksurf">@beanstalksurf</a></h2>
+
+<h2><a href="http://jacobo.github.com/talks"><code>jacobo.github.com/talks</code></a></h2>
 </div>
 </div></body></html></div>
 <div id="pauseScreen">
