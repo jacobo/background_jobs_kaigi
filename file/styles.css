@@ -5,6 +5,10 @@ li {
   font-weight: 300;
   text-shadow: 2px 5px 5px #000;
 }
+a {
+  color: #fff;
+  text-decoration: none;
+}
 
 div.larger {
  font-size: 200%;
@@ -58,6 +62,10 @@ pre {
 .slide .black {
   color: #000;
 }
+.slide .black a{
+  color: #000;
+}
+
 .slide .black h1, .slide .black h2{
   text-shadow: none;
 }
