@@ -11,7 +11,7 @@
 ### How to Fail at Background Jobs
 ## `jacobo.github.com/background_jobs`
 
-.notes Failure is a good thing. I want to spark conversations.
+.notes Failure is a good thing. We more from failure than success.
 
 !SLIDE[bg=images/evan.jpg] moredarkness shadowh2
 ### Delayed::Job
@@ -56,6 +56,9 @@
     end
 
     Rails.queue[:jobs].push(MyJob.new(account))
+
+.notes Rails core says this is a failure because the Q name is in the caller instead of being defined in the job
+.notes I say this is a fail because this API places terrible constraints and limitations on backend integrators
 
 !SLIDE[bg=images/marshal.png]
 ### Fail at Serialization
@@ -809,7 +812,8 @@
 
 !SLIDE[bg=images/mudbath.jpg] shadowh2
 ### Questions?
-<br/><br/><br/><br/><br/><br/>
-<br/><br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
 ## `jacobo.github.com/background_jobs`
 ## [@beanstalksurf](http://twitter.com/beanstalksurf)
+## `jacobo.github.com/talks`

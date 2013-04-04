@@ -19,7 +19,7 @@ GEM
     gli (1.6.0)
     json (1.7.7)
     method_source (0.8.1)
-    nokogiri (1.5.8)
+    nokogiri (1.5.9)
     parslet (1.5.0)
       blankslate (~> 2.0)
     pry (0.9.12)
