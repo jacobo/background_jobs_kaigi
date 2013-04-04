@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/jacobo/showoff.git
-  revision: 66d7d69fb510ccbd12196526a509d57d2774651d
+  revision: e1fc828a1179b2fa887b92469967d0ed2805fa1c
   specs:
     showoff (0.7.0)
       gli (>= 1.3.2)

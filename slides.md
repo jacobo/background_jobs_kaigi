@@ -1,9 +1,11 @@
-!SLIDE[bg=images/beanstalksurf.jpg]
+!SLIDE[bg=images/surfheadstand.jpg]
 ### Jacob Burkhart
 <br/><br/><br/><br/>
 <br/><br/><br/><br/>
 <br/><br/><br/><br/><br/>
-## @beanstalksurf
+## [@beanstalksurf](http://twitter.com/beanstalksurf)
+
+.notes change to to beanstalksurf.jpg when in Japan
 
 !SLIDE[bg=images/closeout.jpg] black
 ### How to Fail at Background Jobs
@@ -28,8 +30,8 @@
 ## CFP closes Tuesday, April 9
 
 !SLIDE[bg=images/closeout.jpg] black
-### A personal history of attempting to make background jobs work better and only being sorta-OK at it
-<br/><br/><br/>
+### Seeking Better Abstractions for Background Jobs
+<br/><br/><br/><br/><br/><br/><br/><br/>
 ## `jacobo.github.com/background_jobs`
 
 !SLIDE[bg=images/skimboard.jpg] smallerh2 moredarkness
@@ -223,7 +225,7 @@
     @@@ ruby
     script/amqp_listener run
 
-## github.com/brontes3d/amqp_listener
+## `github.com/brontes3d/amqp_listener`
 
 !SLIDE[bg=images/sunset.jpg] align-left
 ### Moment of Reflection
@@ -330,13 +332,13 @@
 .notes We would have jobs fail, and have to go in and read the code of this method body, and figure out where it failed... and try to fix it. But is the job still running? Did the job throw an exception?
 
 
-!SLIDE bullets
+!SLIDE bullets incremental
 ### Reliability
-* Retry (raise, crash, hang). Time-out
+* Run at least once vs. no-more-than once
 * Reliable Queue vs Reliable Job
+* Retry (raise, crash, hang). Time-out
 * Monitor / Maintain N workers
 * Kill / Restart workers
-* Run only once / no-more-than once
 * Did it run? Did it fail? How? Where?
 
 !SLIDE
@@ -418,7 +420,7 @@
 
 <h2><iframe width="640" height="360" src="http://www.youtube.com/embed/NpTT30wLL-w?rel=0" frameborder="0" allowfullscreen></iframe></h2>
 
-## `http://youtu.be/NpTT30wLL-w`
+## [`http://youtu.be/NpTT30wLL-w`](http://youtu.be/NpTT30wLL-w)
 
 !SLIDE[bg=images/josh.jpg] moredarkness
 ### Model Intent
@@ -554,7 +556,7 @@
       include Celluloid
       ???
 
-# `sidekiq.org`
+# [`sidekiq.org`](http://sidekiq.org)
 ## `github.com/celluloid/celluloid`
 
 !SLIDE[bg=images/riding.jpg]
@@ -594,7 +596,7 @@
         w.start    = "bundle exec rake --trace resque:work"
       ...
 
-# `godrb.com`
+# [`godrb.com`](http://godrb.com)
 
 !SLIDE
 ### Or Daemons
@@ -615,14 +617,14 @@
 
     Daemons.run(File.expand_path('../worker',  __FILE__), options)
 
-# `daemons.rubyforge.org`
+# [`daemons.rubyforge.org`](http://daemons.rubyforge.org)
 
 !SLIDE
 ### Or Don't?
 
 ![](images/torquebox.jpg)
 
-# `torquebox.org`
+# [`torquebox.org`](http://torquebox.org)
 
 !SLIDE[bg=images/chris.jpg]
 &nbsp;
@@ -648,8 +650,7 @@
           job = @queue.deq
           job.run
 
-`github.com/rubygems/bundler-api/blob/master/lib/`
-`bundler_api/update/consumer_pool.rb`
+`github.com/rubygems/bundler-api/blob/master/lib/ bundler_api/update/consumer_pool.rb`
 
 
 !SLIDE
@@ -672,8 +673,7 @@
     DRb.start_service "druby://localhost:#{@on_port}", 
                       ServiceManager.new(@progress)
 
-`github.com/engineyard/multi_headed_greek_monster/blob/master/`
-`lib/multi_headed_greek_monster.rb`
+`github.com/engineyard/multi_headed_greek_monster/blob/master/ lib/multi_headed_greek_monster.rb`
 
 !SLIDE
 ### Qu Push/Pop Redis
@@ -791,7 +791,7 @@
 !SLIDE[bg=images/sunset2.jpg] moredarkness incremental bullets biggish-bullets bigger-bullets
 ### Conclusions
 
-  * Know your how your tools work
+  * Abstraction Awareness
   * Model important jobs in your domain
   * Contribute to Resque
 
@@ -800,4 +800,4 @@
 <br/><br/><br/><br/><br/><br/>
 <br/><br/><br/><br/><br/><br/>
 ## `jacobo.github.com/background_jobs`
-## @beanstalksurf
+## [@beanstalksurf](http://twitter.com/beanstalksurf)
