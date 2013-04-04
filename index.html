@@ -304,6 +304,8 @@ def commit_callback
 
 <h2><a href="http://github.com/brontes3d/commit_callback"><code>github.com/brontes3d/commit_callback</code></a></h2>
 
+<p>(rails 2.3 only)</p>
+
 <p class="notes">probably only works with rails 2.3 etc...</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/manybugs.jpg') center no-repeat;" class="slide" data-transition="none">
@@ -454,11 +456,10 @@ end</code></pre>
 <h3>Reliability</h3>
 
 <ul>
-<li>Run at least once vs. no-more-than once</li>
 <li>Reliable Queue vs Reliable Job</li>
 <li>Retry (raise, crash, hang). Time-out</li>
 <li>Monitor / Maintain N workers</li>
-<li>Kill / Restart workers</li>
+<li>Graceful Restart</li>
 <li>Did it run? Did it fail? How? Where?</li>
 </ul>
 </div>
@@ -597,29 +598,42 @@ end</code></pre>
     end
     ...</code></pre>
 </div>
+</div></body></html><html><body><div class="slide" data-transition="none">
+<div class="content" ref="./slides/42">
+<h3>Non-Resque specific job-middleware</h3>
+
+<pre class="sh_ruby"><code>procedure = Viaduct::Builder.new do
+  use Instrumetation
+  use ProvisionNotification
+  use ProvisionInstance
+end
+Viaduct::Runner.new.run(procedure, data)</code></pre>
+
+<h2><a href="http://github.com/slack/viaduct"><code>github.com/slack/viaduct</code></a></h2>
+</div>
 </div></body></html><html><body><div style="background: url('file/./images/sunset3.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content align-left" ref="./slides/42">
+<div class="content align-left" ref="./slides/43">
 <h3>Moment of Reflection</h3>
 
 <p class="notes">at 3M we fixed our problems by making the Queuing system smarter.
 .notes I tried to do this at EY and failed, so we fixed out problems by using a dumber Q and smarter business logic</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/peaches.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness bullets incremental bigger-bullets" ref="./slides/43">
+<div class="content moredarkness bullets incremental bigger-bullets" ref="./slides/44">
 <h3>3 Ingredients</h3>
 
 <ul>
 <li>Work Loop</li>
-<li>Monitor / Restart</li>
+<li>Monitor &amp; Restart</li>
 <li>Queue</li>
 </ul>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/maze.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/44">
+<div class="content" ref="./slides/45">
 <h3>Loop</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/45">
+<div class="content" ref="./slides/46">
 <h3>Resque Event Loop</h3>
 
 <pre class="sh_ruby"><code>def work(interval = 5, &amp;block)
@@ -639,7 +653,7 @@ end</code></pre>
 <p><a href="http://github.com/defunkt/resque/blob/master/lib/resque/worker.rb"><code>github.com/defunkt/resque/blob/master/lib/resque/worker.rb</code></a></p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/46">
+<div class="content" ref="./slides/47">
 <h3>EventMachine</h3>
 
 <pre class="sh_c"><code>void EventMachine_t::Run()
@@ -662,7 +676,7 @@ end</code></pre>
 <p><a href="http://github.com/eventmachine/eventmachine/blob/master/ext/em.cpp"><code>github.com/eventmachine/eventmachine/blob/master/ext/em.cpp</code></a></p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/47">
+<div class="content" ref="./slides/48">
 <h3>EM.next_tick</h3>
 
 <pre class="sh_ruby"><code>require 'eventmachine'
@@ -673,7 +687,7 @@ EM.run {
 EM.next_tick{ puts "do something" }</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/48">
+<div class="content" ref="./slides/49">
 <h3>Celluloid / Sidekiq</h3>
 
 <pre class="sh_ruby"><code>class Sidekiq::Manager
@@ -693,14 +707,14 @@ class Sidekiq::Processor
 <h2><a href="http://github.com/celluloid/celluloid"><code>github.com/celluloid/celluloid</code></a></h2>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/riding.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/49">
-<h3>Monitoring</h3>
+<div class="content" ref="./slides/50">
+<h3>Monitor &amp; Restart</h3>
 
 <p class="notes">graceful restart
 .notes kill old dead things</p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content align-left" ref="./slides/50">
+<div class="content align-left" ref="./slides/51">
 <h3>Resque Signals</h3>
 
 <h2>
@@ -719,7 +733,7 @@ class Sidekiq::Processor
 <code>CONT</code> - Start to process new jobs again after a USR2</h2>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/51">
+<div class="content" ref="./slides/52">
 <h3>Monitor with God</h3>
 
 <pre class="sh_ruby"><code>5.times do |n|
@@ -739,7 +753,7 @@ class Sidekiq::Processor
 <h1><a href="http://godrb.com"><code>godrb.com</code></a></h1>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/52">
+<div class="content" ref="./slides/53">
 <h3>Or Daemons</h3>
 
 <pre class="sh_ruby"><code>require 'daemons'
@@ -760,7 +774,7 @@ Daemons.run(File.expand_path('../worker',  __FILE__), options)</code></pre>
 <h1><a href="http://daemons.rubyforge.org"><code>daemons.rubyforge.org</code></a></h1>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/53">
+<div class="content" ref="./slides/54">
 <h3>Or Don't?</h3>
 
 <p><img src="./file/./images/torquebox.jpg" alt=""></p>
@@ -768,15 +782,15 @@ Daemons.run(File.expand_path('../worker',  __FILE__), options)</code></pre>
 <h1><a href="http://torquebox.org"><code>torquebox.org</code></a></h1>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/chris.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/54">
+<div class="content" ref="./slides/55">
 <p>&#160;</p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/lineup.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/55">
+<div class="content" ref="./slides/56">
 <h3>Queue</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/56">
+<div class="content" ref="./slides/57">
 <h3>Thread-safe Queue</h3>
 
 <pre class="sh_ruby"><code>module BundlerApi
@@ -797,7 +811,7 @@ Daemons.run(File.expand_path('../worker',  __FILE__), options)</code></pre>
 <p><a href="http://github.com/rubygems/bundler-api/blob/master/lib/bundler_api/update/consumer_pool.rb"><code>github.com/rubygems/bundler-api/blob/master/lib/ bundler_api/update/consumer_pool.rb</code></a></p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/57">
+<div class="content" ref="./slides/58">
 <h3>DRB objects</h3>
 
 <pre class="sh_ruby"><code>class MultiHeadedGreekMonster
@@ -819,7 +833,7 @@ DRb.start_service "druby://localhost:#{@on_port}",
 <p><a href="http://github.com/engineyard/multi_headed_greek_monster/blob/master/lib/multi_headed_greek_monster.rb"><code>github.com/engineyard/multi_headed_greek_monster/blob/master/ lib/multi_headed_greek_monster.rb</code></a></p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/58">
+<div class="content" ref="./slides/59">
 <h3>Qu Push/Pop Redis</h3>
 
 <pre class="sh_ruby"><code>payload.id = SimpleUUID::UUID.new.to_guid
@@ -836,7 +850,7 @@ redis.lpop(queue)</code></pre>
 <p><a href="http://github.com/bkeepers/qu/blob/master/lib/qu/backend/redis.rb"><code>github.com/bkeepers/qu/blob/master/lib/qu/backend/redis.rb</code></a></p>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/59">
+<div class="content" ref="./slides/60">
 <h3>Qu Push/Pop Mongo</h3>
 
 <pre class="sh_ruby"><code>payload.id = SimpleUUID::UUID.new.to_guid
@@ -857,11 +871,11 @@ end</code></pre>
 <p><a href="http://github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb"><code>github.com/bkeepers/qu/blob/master/lib/qu/backend/mongo.rb</code></a></p>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/handstands.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/60">
+<div class="content" ref="./slides/61">
 <h3>All Together</h3>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/61">
+<div class="content" ref="./slides/62">
 <h2><code>script/invoice_worker</code></h2>
 
 <pre class="sh_ruby"><code>#!/usr/bin/env ruby
@@ -880,7 +894,7 @@ end</code></pre>
 Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/62">
+<div class="content" ref="./slides/63">
 <pre class="sh_ruby"><code>class TrapLoop
   trap('TERM') { stop! }
   trap('INT')  { stop! }
@@ -905,7 +919,7 @@ Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
   end</code></pre>
 </div>
 </div></body></html><html><body><div class="slide" data-transition="none">
-<div class="content" ref="./slides/63">
+<div class="content" ref="./slides/64">
 <pre class="sh_ruby"><code>class InvoiceProcessingTask
   def self.enq_task(task_id, invoice_id)
     REDIS.rpush("tasks:#{invoice_id}", task_id)
@@ -929,7 +943,7 @@ Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
   end</code></pre>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/sunset2.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness incremental bullets biggish-bullets bigger-bullets" ref="./slides/64">
+<div class="content moredarkness incremental bullets biggish-bullets bigger-bullets" ref="./slides/65">
 <h3>Conclusions</h3>
 
 <ul>
@@ -939,7 +953,7 @@ Daemons.run(File.expand_path('../invoice_worker',  __FILE__), ...)</code></pre>
 </ul>
 </div>
 </div></body></html><html><body><div style="background: url('file/./images/mudbath.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content shadowh2" ref="./slides/65">
+<div class="content shadowh2" ref="./slides/66">
 <h3>Questions?</h3>
 
 <p><br><br><br><br><br><br><br><br><br><br><br><br></p>
