@@ -192,6 +192,7 @@
           ...
 
 ## `github.com/brontes3d/commit_callback`
+(rails 2.3 only)
 
 .notes probably only works with rails 2.3 etc...
 
@@ -331,14 +332,12 @@
 
 .notes We would have jobs fail, and have to go in and read the code of this method body, and figure out where it failed... and try to fix it. But is the job still running? Did the job throw an exception?
 
-
 !SLIDE bullets incremental
 ### Reliability
-* Run at least once vs. no-more-than once
 * Reliable Queue vs Reliable Job
 * Retry (raise, crash, hang). Time-out
 * Monitor / Maintain N workers
-* Kill / Restart workers
+* Graceful Restart
 * Did it run? Did it fail? How? Where?
 
 !SLIDE
@@ -470,6 +469,19 @@
         end
         ...
 
+!SLIDE
+### Non-Resque specific job-middleware
+
+    @@@ ruby
+    procedure = Viaduct::Builder.new do
+      use Instrumetation
+      use ProvisionNotification
+      use ProvisionInstance
+    end
+    Viaduct::Runner.new.run(procedure, data)
+
+## `github.com/slack/viaduct`
+
 !SLIDE[bg=images/sunset3.jpg] align-left
 ### Moment of Reflection
 
@@ -479,7 +491,7 @@
 !SLIDE[bg=images/peaches.jpg] moredarkness bullets incremental bigger-bullets
 ### 3 Ingredients
 * Work Loop
-* Monitor / Restart
+* Monitor & Restart
 * Queue
 
 !SLIDE[bg=images/maze.jpg]
@@ -560,7 +572,7 @@
 ## `github.com/celluloid/celluloid`
 
 !SLIDE[bg=images/riding.jpg]
-### Monitoring
+### Monitor & Restart
 
 .notes graceful restart
 .notes kill old dead things
