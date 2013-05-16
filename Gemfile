@@ -1,4 +1,5 @@
-source :rubygems
+source "https://rubygems.org"
+
 gem 'bluecloth'
 gem 'nokogiri'
 gem 'sinatra', "1.3.2"

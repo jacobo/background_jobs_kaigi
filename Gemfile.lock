@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/jacobo/showoff.git
-  revision: e1fc828a1179b2fa887b92469967d0ed2805fa1c
+  revision: e1f4ce63e700b2cb4e369565a08c9b408f78cd0d
   specs:
     showoff (0.7.0)
       gli (>= 1.3.2)
@@ -11,13 +11,13 @@ GIT
       sinatra (~> 1.3)
 
 GEM
-  remote: http://rubygems.org/
+  remote: https://rubygems.org/
   specs:
     blankslate (2.1.2.4)
     bluecloth (2.2.0)
     coderay (1.0.9)
     gli (1.6.0)
-    json (1.7.7)
+    json (1.8.0)
     method_source (0.8.1)
     nokogiri (1.5.9)
     parslet (1.5.0)
