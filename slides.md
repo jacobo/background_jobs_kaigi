@@ -10,6 +10,121 @@
 ## `jacobo.github.com/background_jobs_kaigi`
 
 !SLIDE
+### How to do multiple things at once
+
+!SLIDE
+#The simplest thing that can possibly work
+
+!SLIDE
+###Threads
+
+    @@@ ruby
+    work = (0..99).to_a
+    worker = lambda{|x| sleep 0.1; puts x*x }
+
+    workers = work.map do |x|
+      Thread.new do
+        worker.call(x)
+      end
+    end
+    workers.map(&:join)
+
+!SLIDE
+###Thread Pool
+
+    @@@ ruby
+    require 'thread'
+    work_q = Queue.new
+    (0..99).to_a.each{|x| work_q.push x }
+    workers = (0...10).map do
+      Thread.new do
+        begin
+          while x = work_q.pop(true)
+            sleep 0.1; puts x*x
+          end
+        rescue ThreadError
+        end
+      end
+    end
+    workers.map(&:join)
+
+!SLIDE
+### Redis (& Threads)
+
+    @@@ ruby
+    require 'redis'
+    REDIS = Redis.connect(:url => "redis://localhost")
+    (0..99).to_a.each{|x| REDIS.rpush("jobs_q", x) }
+    workers = (0...10).map do
+      Thread.new do
+        while(job = REDIS.lpop("jobs_q"))
+          x = job.to_i
+          sleep 0.1; puts x*x
+        end
+      end
+    end
+    workers.map(&:join)
+
+!SLIDE
+###Celluloid
+
+    @@@ ruby
+    require 'celluloid'
+    class Worker
+      include Celluloid
+      def work(x)
+        sleep 0.1; puts x*x
+      end
+    end
+    worker_pool = Worker.pool(size: 10)
+    futures = (0..99).to_a.map{|x| worker_pool.future.work(x)}
+    futures.map(&:value) #wait for all jobs to be completed
+    worker_pool.terminate
+
+.notes futuroscope: https://github.com/codegram/futuroscope
+
+!SLIDE
+###DRB
+
+    @@@ ruby
+    require 'drb'
+    server_pid = fork do
+      DRb.start_service "druby://localhost:28371", (0..99).to_a
+      DRb.thread.join
+    end
+    work_q = DRbObject.new nil, "druby://localhost:28371"
+    worker_pids = (0...10).map do |i|
+      fork do
+        #sleep(i) #else DRb::DRbConnError in ruby < 2.0
+        while x = work_q.pop
+          sleep 0.1; puts x*x
+        end
+      end
+    end
+    worker_pids.each{ |pid| Process.wait(pid) }
+    Process.kill("KILL", server_pid)
+
+!SLIDE
+### `multi_headed_` `greek_monster`
+
+    @@@ruby
+    require 'multi_headed_greek_monster'
+
+    monster = MultiHeadedGreekMonster.new(nil, 10) do |x, work|
+      sleep 0.1; puts x*x
+    end
+    (0..100).to_a.each do |x|
+      monster.feed(x)
+    end
+    monster.finish
+
+`github.com/engineyard/multi_headed_greek_monster`
+
+!SLIDE
+### How to Fail at Background Jobs
+## `jacobo.github.com/background_jobs_kaigi`
+
+!SLIDE
 #Engine Yard
 (we run servers)
 
@@ -101,7 +216,7 @@
 (rails 2.3 only)
 
 !SLIDE
-### A Service Object
+### Service Object
 
     @@@ ruby
     class ServerBooter
@@ -122,7 +237,6 @@
 !SLIDE
 ### after_commit
 
-
     @@@ ruby
     class Server < ActiveRecord::Base
       after_commit do |s|
@@ -141,89 +255,304 @@
 ## `http://bitly.com/hlUiBc`
 
 !SLIDE
-#3 Parts
-
-Loop
-
-Queue
-
-Runner
-
-!SLIDE
-#The simplest thing that can possibly work
-
-!SLIDE
-###Threads
+### What we really wanted?
 
     @@@ ruby
-    work = (0..99).to_a
-    worker = lambda{|x| sleep 0.1; puts x*x }
+    class ServersController < ApplicationController
 
-    workers = work.map do |x|
-      Thread.new do
-        worker.call(x)
+      def create
+        server = Server.create!(params[:server])
+        Thread.new{ server.boot! }
+        redirect_to server_url(server)
       end
+
     end
-    workers.map(&:join)
+
+## Background Work should not interfere with Request Processing.
+
+.notes BUT: Thread.new could still eat up some CPU before the request finishes. Graceful Rolling Restarts while requests are in-progress is hard/error-prone enough. Adding workers makes it worse.
 
 !SLIDE
-###Thread Pool
+### Asynchronous workers are like a service that hasn't been extracted
+
+!SLIDE[bg=images/ey_soa.png]
+&nbsp;
+
+!SLIDE moredarkness bullets incremental bigger-bullets
+###3 Parts
+* Loop
+* Runner
+* Queue
+
+!SLIDE
+### Loops
+
+!SLIDE
+### Unicorn
 
     @@@ ruby
-    require 'thread'
-    work_q = Queue.new
-    (0..99).to_a.each{|x| work_q.push x }
-    workers = (0...10).map do
-      Thread.new do
-        begin
-          while x = work_q.pop(true)
-            sleep 0.1; puts x*x
+    def worker_loop(worker)
+      ...
+      while sock = ready.shift
+        if client = sock.kgio_tryaccept
+          process_client(client)
+          nr += 1
+          worker.tick = Time.now.to_i
+        end
+        break if nr < 0
+      end
+      ...
+    end
+
+    def process_client(client)
+      status, headers, body = 
+        @app.call(env = @request.read(client))
+      ...
+    end
+
+!SLIDE
+### Resque
+
+    @@@ ruby
+    def work(interval = 5, &block)
+      loop do
+        run_hook :before_fork, job
+
+        if job = reserve
+          if @child = fork
+            procline "Forked #{@child} at #{Time.now.to_i}"
+            Process.wait
+          else
+            procline "Processing #{job.queue} since #{Time.now.to_i}"
+            perform(job, &block)
+            exit! unless @cant_fork
           end
-        rescue ThreadError
         end
       end
-    end
-    workers.map(&:join)
+
+`github.com/defunkt/resque/blob/master/lib/resque/worker.rb`
+
 
 !SLIDE
-###DRB
+### EventMachine
+
+    @@@ C
+    void EventMachine_t::Run()
+      //Epoll and Kqueue stuff..
+      ...
+
+      while (true) {
+        _UpdateTime();
+        _RunTimers();
+
+        _AddNewDescriptors();
+        _ModifyDescriptors();
+
+        _RunOnce();
+        if (bTerminateSignalReceived)
+          break;
+      }
+    }
+
+`github.com/eventmachine/eventmachine/blob/master/ext/em.cpp`
+
+!SLIDE
+### EM.next_tick
 
     @@@ ruby
-    require 'drb'
-    server_pid = fork do
-      DRb.start_service "druby://localhost:28371", (0..99).to_a
-      DRb.thread.join
+    require 'eventmachine'
+    EM.run {
+      EM.start_server(host, port, self)
+    }
+
+    EM.next_tick{ puts "do something" }
+
+!SLIDE
+### Thin
+
+    @@@ ruby
+    class ServersController < ApplicationController
+
+      def create
+        server = Server.create!(params[:server])
+        EM.next_tick{ server.boot! }
+        redirect_to server_url(server)
+      end
+
     end
-    work_q = DRbObject.new nil, "druby://localhost:28371"
-    worker_pids = (0...10).map do |i|
-      fork do
-        #sleep(i) #else DRb::DRbConnError in ruby < 2.0
-        while x = work_q.pop
-          sleep 0.1; puts x*x
+
+!SLIDE
+### EM-Resque ?
+
+## `github.com/SponsorPay/em-resque`
+
+## OR...
+
+    @@@ ruby
+    worker = Resque::Worker.new("*")
+    EventMachine.add_periodic_timer( 0.1 ) do
+      if job = worker.reserve
+        worker.perform(job)
+      end
+    end
+
+!SLIDE
+### Sucker Punch
+
+    @@@ ruby
+    class Worker
+      include SuckerPunch::Worker
+      def perform(job)
+        ...
+      end
+    end
+
+## `github.com/brandonhilkert/sucker_punch`
+
+    @@@ ruby
+    SuckerPunch::Worker = Celluloid
+
+!SLIDE
+### Reel & Sidekiq
+
+# `github.com/celluloid/reel`
+# [`sidekiq.org`](http://sidekiq.org)
+
+!SLIDE[bg=images/chris.jpg]
+### Torquebox
+
+!SLIDE
+### Failing at Loops
+
+!SLIDE
+### Talking to multiple systems
+# AMQP + XMPP
+
+!SLIDE
+### Cron jobs are hard
+
+## database configuration does not specify adapter
+
+    @@@ html
+    .../activerecord-3.2.11/.../connection_specification.rb:47:in `resolve_hash_connection': 
+    database configuration does not specify adapter (ActiveRecord::AdapterNotSpecified)
+      from .../activerecord-3.2.11/.../connection_specification.rb:41:in `resolve_string_connection'
+      from .../activerecord-3.2.11/.../connection_specification.rb:25:in `spec'
+      from .../activerecord-3.2.11/.../connection_specification.rb:130:in `establish_connection'
+      from .../activerecord-3.2.11/.../railtie.rb:82:in `block (2 levels) in <class:Railtie>'
+      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:36:in `instance_eval'
+      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:36:in `execute_hook'
+      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:43:in `block in run_load_hooks'
+      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:42:in `each'
+      ...
+
+## `blog.engineyard.com/2013/cron-jobs`
+
+!SLIDE
+### Resque-scheduler
+
+    @@@ changelog
+    queue_cleanup_process:
+      cron: "0 0 * * *"
+      class: CleanupAllTheThings
+      queue: low
+      args:
+      description: "Cleanup pending things"
+
+## `github.com/bvandenbos/resque-scheduler`
+
+.notes resque is already in a loop, why can't it check for work and run it
+
+!SLIDE
+### Give me hooks!
+
+!SLIDE
+### Runners
+
+!SLIDE
+### God
+
+    @@@ ruby
+    5.times do |n|
+      God.watch do |w|
+        w.name     = "resque-#{num}"
+        w.group    = 'resque'
+        w.interval = 30.seconds
+        w.log      = "#{app_root}/log/worker.#{num}.log"
+        w.dir      = app_root
+        w.env      = {
+          "GOD_WATCH"   => w.name,
+          "QUEUE"       => '*'
+        }
+        w.start    = "bundle exec rake --trace resque:work"
+      ...
+
+# [`godrb.com`](http://godrb.com)
+
+!SLIDE
+### Daemons
+
+    @@@ ruby
+    require 'daemons'
+
+    options = {
+      :app_name => "worker",
+      :log_output => true,
+      :backtrace => true,
+      :dir_mode => :normal,
+      :dir => File.expand_path('../../tmp/pids',  __FILE__),
+      :log_dir => File.expand_path('../../log',  __FILE__),
+      :multiple => true,
+      :monitor => true
+    }
+
+    Daemons.run(File.expand_path('../worker',  __FILE__), options)
+
+# [`daemons.rubyforge.org`](http://daemons.rubyforge.org)
+
+!SLIDE
+### Monit
+
+## (mess of bash)
+
+    @@@ sh
+    if [[ ! -f "$pidfile" ]]
+    then
+      cmd="/usr/bin/env \$V \$VV 
+        APP_ROOT=\${application_root} ${RAKE:-'rake'} -f 
+        \${application_root}/Rakefile resque:work"
+  
+
+# `mmonit.com/monit`
+
+!SLIDE
+### Bluepill
+
+    @@@ ruby
+    Bluepill.application("#{app_name}") do |app|
+      app.working_dir = "/var/apps/#{app_name}/current"
+      worker_count.times do |i|
+        app.process("resque-#{i}") do |process|
+          process.start_command = "bundle exec rake resque:work"
+          process.pid_file = "/var/apps/canvas/shared/pids/#{app_name}-resque-#{i}.pid"
+          process.stop_command = "kill -QUIT {{PID}}"
+          process.daemonize = true
+          process.monitor_children do |child_process|
+            child_process.stop_command = "kill -9 {{PID}}"
+          end
         end
       end
     end
-    worker_pids.each{ |pid| Process.wait(pid) }
-    Process.kill("KILL", server_pid)
+
+# `github.com/arya/bluepill`
 
 !SLIDE
-
-# `github.com/engineyard/ multi_headed_greek_monster`
-
-    @@@ruby
-    require 'multi_headed_greek_monster'
-
-    monster = MultiHeadedGreekMonster.new(nil, 10) do |x, work|
-      sleep 0.1; puts x*x
-    end
-    (0..100).to_a.each do |x|
-      monster.feed(x)
-    end
-    monster.finish
-
+### Failing at Runners
 
 !SLIDE
-#DIY
+### Graceful restart
+
+# Has your deploy succeeded if your workers havn't all restared yet?
 
 !SLIDE
     @@@ruby
@@ -251,6 +580,38 @@ Runner
     end
 
 !SLIDE
+### Zombie Workers
+
+# Do not respond to kill
+# Come back from the dead and eat your jobs
+
+!SLIDE
+### Untracked Workers
+
+# A worker without a pidfile is not restarted
+
+!SLIDE
+### Idle Workers
+
+# Loose their connections
+
+!SLIDE
+### Queues
+
+!SLIDE
+###Queue Basics
+
+<br/>
+
+# `rpush("jobs", job_data)`
+
+<br/>
+
+# `job_data = lpop("jobs")`
+
+!SLIDE
+###DIY Redis Queue
+
     @@@ruby
     REDIS = Redis.connect(:url => "redis://#{redishost}")
 
@@ -269,51 +630,97 @@ Runner
       end
     end
 
-!SLIDE
+!SLIDE bullets incremental
+### More Redis
 
-## `script/server_boot_worker`
+* a list of queues
+* a list of workers
+* a list jobs in progress
+* a list of failed jobs
+
+!SLIDE
+### Failing at Queues
+
+#Re-Enqueue
 
     @@@ ruby
-    #!/usr/bin/env ruby
-    require File.expand_path('../../config/environment',
-      __FILE__)
+    class ServerSetupJob
 
-    TrapLoop.start do
-      ServerBootJob.process_jobs!
+      def self.perform(server_id)
+        server = Server.find(server_id)
+        if server.still_booting?
+          Resque.enqueue ServerSetupJob, server_id
+        else
+          #continue...
+        end
+      end
+
     end
 
-## `script/server_boot_runner start`
-## `script/server_boot_runner stop`
+!SLIDE
+### Flood Redis
 
     @@@ ruby
-    require 'daemons'
-    Daemons.run(File.expand_path('../server_boot_worker',
-      __FILE__),
-      log_output: true, backtrace: true,
-      dir_mode: :normal, multiple: true, :monitor: true,
-      dir: File.expand_path('../../tmp/pids',  __FILE__),
-      log_dir: File.expand_path('../../log',  __FILE__))
+    if success
+      redis.sadd("job:#{payload.id}:progress",
+        "succeeded: #{Time.now.to_s}")
+    else
+      redis.sadd("job:#{payload.id}:progress",
+        "failed: #{Time.now.to_s}")
 
 
 !SLIDE
-#Failing at Loops
+### Truly Failing at Background Jobs
 
-talk to AMQP and XMPP from the same system
-talk to AMQP or XMPP from a web server
-
-!SLIDE
-#Failing at Queues
-
-try to debug what's going on and bring down your production system
+!SLIDE[bg=images/job_dependencies.png]
+### Job Dependencies
 
 !SLIDE
-#Failing at Runners
-graceful restart
-fail to restart and see zombie workers swallow your jobs
+### Jobs Races
+
+# 1 ServerBoot Job
+# 1 ServerTerminate Job
 
 !SLIDE
-#Failing at Background Jobs
+### Resque Plugins
 
-jobs that depend on other jobs
-jobs that need to run on a schedule
-multi-Q systems
+    @@@ ruby
+    class ServerBooting
+      extend Resque::Plugins::JobTracking
+
+      def self.track(server_id, opts)
+        s = Server.find(server_id)
+        ["Account:#{s.account_id}",
+         "Environment:#{s.environment_id}"]
+         "Server:#{server_id}"]
+      end
+
+      def self.perform(server_id, opts)
+        #do it
+      end
+    end
+
+## `github.com/engineyard/resque-job-tracking`
+
+!SLIDE
+###225 is too many Resque Plugins
+
+# [`rubygems.org/search?query=resque`](http://rubygems.org/search?query=resque)
+
+!SLIDE
+### Model it in your Database
+(not Redis)
+
+!SLIDE
+### You Are not Alone
+
+!SLIDE bullets incremental
+### We deserve better
+
+* Reliable/Restartable workers
+* Integration with App Server and Deploys
+* Inter-worker communication
+* Monitoring/Tracking
+
+!SLIDE
+### Questions
