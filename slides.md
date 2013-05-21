@@ -5,6 +5,15 @@
 <br/><br/><br/><br/><br/>
 ## [@beanstalksurf](http://twitter.com/beanstalksurf)
 
+.notes take out the sleeps?
+.notes use the full work queue
+.notes Tim says look at app-engine pipeline
+.notes "eye" like bluebill or monit
+.notes FIND the celluloid loop (Tim can help)
+.notes Celluloid Logger
+
+.notes progression of sequential -> threaded -> multi-machine... easy -> hard
+
 !SLIDE
 ### How to Fail at Background Jobs
 ## `jacobo.github.com/background_jobs_kaigi`
@@ -14,6 +23,8 @@
 
 !SLIDE
 #The simplest thing that can possibly work
+
+.notes Progress bar on ways to do some work in the background
 
 !SLIDE biggercode
 ###Threads
@@ -96,7 +107,7 @@
     require 'futuroscope/convenience'
 
     (0..99).to_a.map do |x|
-      future{ sleep 1; puts x*x }
+      future{ sleep 0.1; puts x*x }
     end
 
 ## `github.com/codegram/futuroscope`
@@ -121,6 +132,8 @@
     end
     worker_pids.each{ |pid| Process.wait(pid) }
     Process.kill("KILL", server_pid)
+
+.notes STRESS the importance of killing your workers
 
 !SLIDE
 ### `multi_headed_` `greek_monster`
@@ -295,6 +308,8 @@
 
 !SLIDE[bg=images/ey_soa.png]
 &nbsp;
+
+.notes include and specifically mention the provisioning service
 
 !SLIDE moredarkness bullets incremental bigger-bullets
 ###3 Parts
@@ -584,7 +599,7 @@
 !SLIDE
 ### Graceful restart
 
-# Has your deploy succeeded if your workers havn't all restared yet?
+# Has your deploy succeeded if your workers haven't all restarted yet?
 
 !SLIDE
     @@@ruby
@@ -625,7 +640,7 @@
 !SLIDE
 ### Idle Workers
 
-# Loose their connections
+# Lose their connections
 
 !SLIDE moredarkness bullets bigger-bullets highlight2
 ###3 Parts
@@ -707,9 +722,6 @@
 !SLIDE
 ### Truly Failing at Background Jobs
 
-!SLIDE
-### Idempotence
-
 !SLIDE[bg=images/job_dependencies.png]
 ### Job Dependencies
 
@@ -752,6 +764,17 @@
 !SLIDE
 ### You Are not Alone
 
+!SLIDE
+### How to do Background Jobs Conservatively
+* Idempotence
+* two
+* three
+
+!SLIDE
+### What to do:
+contribute to resque
+contribute to celluloid
+
 !SLIDE bullets incremental
 ### We deserve better
 
@@ -759,6 +782,8 @@
 * Integration with App Server and Deploys
 * Inter-worker communication
 * Monitoring/Tracking
+
+.notes need to have this explained better (especially Inter-worker communication)
 
 !SLIDE
 ### Questions
