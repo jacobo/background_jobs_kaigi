@@ -15,12 +15,14 @@
 !SLIDE
 #The simplest thing that can possibly work
 
-!SLIDE
+!SLIDE biggercode
 ###Threads
 
     @@@ ruby
     work = (0..99).to_a
-    worker = lambda{|x| sleep 0.1; puts x*x }
+    worker = lambda do |x|
+      sleep 0.1; puts x*x
+    end
 
     workers = work.map do |x|
       Thread.new do
@@ -29,7 +31,7 @@
     end
     workers.map(&:join)
 
-!SLIDE
+!SLIDE biggishcode
 ###Thread Pool
 
     @@@ ruby
@@ -48,13 +50,15 @@
     end
     workers.map(&:join)
 
-!SLIDE
+!SLIDE biggishcode
 ### Redis (& Threads)
 
     @@@ ruby
     require 'redis'
-    REDIS = Redis.connect(:url => "redis://localhost")
-    (0..99).to_a.each{|x| REDIS.rpush("jobs_q", x) }
+    REDIS = Redis.connect
+    (0..99).to_a.each do |x|
+      REDIS.rpush("jobs_q", x)
+    end
     workers = (0...10).map do
       Thread.new do
         while(job = REDIS.lpop("jobs_q"))
@@ -65,7 +69,7 @@
     end
     workers.map(&:join)
 
-!SLIDE
+!SLIDE biggishcode
 ###Celluloid
 
     @@@ ruby
@@ -77,11 +81,25 @@
       end
     end
     worker_pool = Worker.pool(size: 10)
-    futures = (0..99).to_a.map{|x| worker_pool.future.work(x)}
-    futures.map(&:value) #wait for all jobs to be completed
+    futures = (0..99).to_a.map do |x|
+      worker_pool.future.work(x)
+    end
+    futures.map(&:value) #wait for all jobs
     worker_pool.terminate
 
-.notes futuroscope: https://github.com/codegram/futuroscope
+!SLIDE biggercode
+###Futuroscope
+
+    @@@ ruby
+    require 'forwardable'
+    require 'set'
+    require 'futuroscope/convenience'
+
+    (0..99).to_a.map do |x|
+      future{ sleep 1; puts x*x }
+    end
+
+## `github.com/codegram/futuroscope`
 
 !SLIDE
 ###DRB
@@ -284,8 +302,11 @@
 * Runner
 * Queue
 
-!SLIDE
-### Loops
+!SLIDE moredarkness bullets bigger-bullets highlight0
+###3 Parts
+* Loop
+* Runner
+* Queue
 
 !SLIDE
 ### Unicorn
@@ -413,20 +434,25 @@
     SuckerPunch::Worker = Celluloid
 
 !SLIDE
-### Reel & Sidekiq
+### Sidekiq
+
+# [`sidekiq.org`](http://sidekiq.org)
+
+### Reel
 
 # `github.com/celluloid/reel`
-# [`sidekiq.org`](http://sidekiq.org)
+
+### DCell
+
+# `github.com/celluloid/dcell`
 
 !SLIDE[bg=images/chris.jpg]
 ### Torquebox
 
-!SLIDE
-### Failing at Loops
+# [`torquebox.org`](http://torquebox.org)
 
 !SLIDE
-### Talking to multiple systems
-# AMQP + XMPP
+### Failing at Loops
 
 !SLIDE
 ### Cron jobs are hard
@@ -466,8 +492,14 @@
 !SLIDE
 ### Give me hooks!
 
-!SLIDE
-### Runners
+* Unicorn/Rack after-request
+* Resque idle-tick
+
+!SLIDE moredarkness bullets bigger-bullets highlight1
+###3 Parts
+* Loop
+* Runner
+* Queue
 
 !SLIDE
 ### God
@@ -595,8 +627,11 @@
 
 # Loose their connections
 
-!SLIDE
-### Queues
+!SLIDE moredarkness bullets bigger-bullets highlight2
+###3 Parts
+* Loop
+* Runner
+* Queue
 
 !SLIDE
 ###Queue Basics
@@ -630,12 +665,13 @@
       end
     end
 
-!SLIDE bullets incremental
-### More Redis
+!SLIDE bullets
+### Resque Redis
 
+* queues of work
 * a list of queues
 * a list of workers
-* a list jobs in progress
+* a list of jobs in progress
 * a list of failed jobs
 
 !SLIDE
@@ -668,15 +704,17 @@
       redis.sadd("job:#{payload.id}:progress",
         "failed: #{Time.now.to_s}")
 
-
 !SLIDE
 ### Truly Failing at Background Jobs
+
+!SLIDE
+### Idempotence
 
 !SLIDE[bg=images/job_dependencies.png]
 ### Job Dependencies
 
 !SLIDE
-### Jobs Races
+### Job Race Conditions
 
 # 1 ServerBoot Job
 # 1 ServerTerminate Job
@@ -703,7 +741,7 @@
 ## `github.com/engineyard/resque-job-tracking`
 
 !SLIDE
-###225 is too many Resque Plugins
+###225 is a lot of <br/> Resque Plugins
 
 # [`rubygems.org/search?query=resque`](http://rubygems.org/search?query=resque)
 

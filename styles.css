@@ -94,7 +94,18 @@ pre {
   padding-top: 10px;
   padding-bottom: 10px;
 }
-
+.highlight0 ul li:first-child {
+  background: #f00;
+}
+.highlight1 ul li {
+  background: #f00;
+}
+.highlight1 ul li:first-child, .highlight1 ul li:last-child {
+  background: rgba(0, 0, 0, 0.8);
+}
+.highlight2 ul li:last-child {
+  background: #f00;
+}
 .biggish-bullets ul {
   margin-top: -25px;
 }
@@ -216,6 +227,10 @@ table td {
 pre.bigcode {
   margin-top: 50px;
   font-size: 400%;
+}
+.biggishcode pre {
+  margin-top: -30px;
+  font-size: 260%;
 }
 .biggercode pre {
   margin-top: -30px;
