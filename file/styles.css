@@ -94,9 +94,40 @@ pre {
   padding-top: 10px;
   padding-bottom: 10px;
 }
-
+.highlight0 ul li:first-child {
+  background: #f00;
+}
+.highlight1 ul li {
+  background: #f00;
+}
+.highlight1 ul li:first-child, .highlight1 ul li:last-child {
+  background: rgba(0, 0, 0, 0.8);
+}
+.highlight2 ul li:last-child {
+  background: #f00;
+}
 .biggish-bullets ul {
   margin-top: -25px;
+}
+.bulletsbigger li{
+  font-size: 150%;
+}
+.corner {
+  width: 160px;
+  padding: 10px;
+  font-size: 300%;
+  letter-spacing: .2em;
+  position: absolute;
+  right: -20px;
+  bottom: 10px;
+  word-wrap: break-word;
+  line-height: .8;
+}
+.corner span.done {
+  color: #ddd;
+}
+.corner span.todo {
+  color: #444;
 }
 
 pre.sh_sourceCode {
@@ -217,6 +248,10 @@ pre.bigcode {
   margin-top: 50px;
   font-size: 400%;
 }
+.biggishcode pre {
+  margin-top: -30px;
+  font-size: 260%;
+}
 .biggercode pre {
   margin-top: -30px;
   font-size: 320%;
@@ -314,4 +349,76 @@ h3 small {
 }
 .tinybr br {
   height: 1px;
+}
+.serverworker {
+  padding: 25px;
+  font-size: 350%;
+  text-align: center;
+  font-weight: bold;
+}
+.serverworker .server {
+  color: #bfb;
+}
+.serverworker .worker {
+  color: #6bf;
+}
+div.server {
+  margin-left: -10px;
+  font-size: 350%;
+  text-align: left;
+}
+.server .x {
+  padding: 10px;
+  width: 492px;
+  border-bottom: 3px solid #bfb;
+}
+div.worker {
+  margin-left: -10px;
+  font-size: 350%;
+  text-align: right;
+}
+.worker .x {
+  padding: 10px;
+  margin-left: 513px;
+  width: 489px;
+  border-bottom: 3px solid #6bf;
+}
+
+.arrow_box {
+	position: absolute;
+	right: 59px;
+	bottom: 382px;
+	width: 300px;
+	background: #f00;
+	border: 4px solid #f00;
+}
+.arrow_box:after, .arrow_box:before {
+	right: 100%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+}
+
+.arrow_box:after {
+	border-color: rgba(0, 0, 0, 0);
+	border-right-color: #f00;
+	border-width: 50px;
+	top: 50%;
+	margin-top: -50px;
+}
+.arrow_box:before {
+	border-color: rgba(255, 0, 0, 0);
+	border-right-color: #f00;
+	border-width: 56px;
+	top: 50%;
+	margin-top: -56px;
+}
+.wanted h3:first-child {
+  color: #f00;
+  font-size: 900%;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
