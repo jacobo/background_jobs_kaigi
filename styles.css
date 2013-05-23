@@ -109,6 +109,23 @@ pre {
 .biggish-bullets ul {
   margin-top: -25px;
 }
+.corner {
+  width: 160px;
+  padding: 10px;
+  font-size: 300%;
+  letter-spacing: .2em;
+  position: absolute;
+  right: -20px;
+  bottom: 10px;
+  word-wrap: break-word;
+  line-height: .8;
+}
+.corner span.done {
+  color: #ddd;
+}
+.corner span.todo {
+  color: #444;
+}
 
 pre.sh_sourceCode {
   margin: 0;
@@ -329,4 +346,37 @@ h3 small {
 }
 .tinybr br {
   height: 1px;
+}
+.serverworker {
+  padding: 25px;
+  font-size: 350%;
+  text-align: center;
+  font-weight: bold;
+}
+.serverworker .server {
+  color: #bfb;
+}
+.serverworker .worker {
+  color: #6bf;
+}
+div.server {
+  margin-left: -10px;
+  font-size: 350%;
+  text-align: left;
+}
+.server .x {
+  padding: 10px;
+  width: 492px;
+  border-bottom: 3px solid #bfb;
+}
+div.worker {
+  margin-left: -10px;
+  font-size: 350%;
+  text-align: right;
+}
+.worker .x {
+  padding: 10px;
+  margin-left: 513px;
+  width: 489px;
+  border-bottom: 3px solid #6bf;
 }

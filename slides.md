@@ -13,68 +13,81 @@
 .notes Celluloid Logger
 
 .notes progression of sequential -> threaded -> multi-machine... easy -> hard
+.notes tim's list of interesting things https://gist.github.com/halorgium/3724a6c202f81f33c8c6
 
 !SLIDE
 ### How to Fail at Background Jobs
 ## `jacobo.github.com/background_jobs_kaigi`
 
 !SLIDE
-### How to do multiple things at once
+### Doing Work in Parallel
 
-!SLIDE
-#The simplest thing that can possibly work
+!SLIDE biggercode
+### The simplest thing that can possibly work
 
-.notes Progress bar on ways to do some work in the background
+<div class="corner"><span class="done">•</span><span class="todo">•••••••</span></div>
+<br/>
+
+    @@@ ruby
+    (0..50).each do |x|
+      50.times{print [128000+x].pack "U*"}
+    end
 
 !SLIDE biggercode
 ###Threads
 
+<div class="corner"><span class="done">••</span><span class="todo">••••••</span></div>
+
     @@@ ruby
-    work = (0..99).to_a
+    work = (0..50).to_a
     worker = lambda do |x|
-      sleep 0.1; puts x*x
+      50.times{print [128000+x].pack "U*"}
     end
 
     workers = work.map do |x|
       Thread.new do
         worker.call(x)
       end
-    end
-    workers.map(&:join)
+    end; "ok"
+    workers.map(&:join); "ok"
 
 !SLIDE biggishcode
 ###Thread Pool
 
+<div class="corner"><span class="done">•••</span><span class="todo">•••••</span></div>
+
     @@@ ruby
     require 'thread'
     work_q = Queue.new
-    (0..99).to_a.each{|x| work_q.push x }
-    workers = (0...10).map do
+    (0..50).to_a.each{|x| work_q.push x }
+    workers = (0...4).map do
       Thread.new do
         begin
           while x = work_q.pop(true)
-            sleep 0.1; puts x*x
+            50.times{print [128000+x].pack "U*"}
           end
         rescue ThreadError
         end
       end
-    end
-    workers.map(&:join)
+    end; "ok"
+    workers.map(&:join); "ok"
 
 !SLIDE biggishcode
 ### Redis (& Threads)
 
+<div class="corner"><span class="done">••••</span><span class="todo">••••</span></div>
+
     @@@ ruby
     require 'redis'
     REDIS = Redis.connect
-    (0..99).to_a.each do |x|
+    (0..50).to_a.each do |x|
       REDIS.rpush("jobs_q", x)
     end
-    workers = (0...10).map do
+    workers = (0...4).map do
       Thread.new do
         while(job = REDIS.lpop("jobs_q"))
           x = job.to_i
-          sleep 0.1; puts x*x
+          50.times{print [128000+x].pack "U*"}
         end
       end
     end
@@ -83,31 +96,38 @@
 !SLIDE biggishcode
 ###Celluloid
 
+<div class="corner"><span class="done">•••••</span><span class="todo">•••</span></div>
+
     @@@ ruby
     require 'celluloid'
     class Worker
       include Celluloid
       def work(x)
-        sleep 0.1; puts x*x
+        50.times{print [128000+x].pack "U*"}
       end
     end
     worker_pool = Worker.pool(size: 10)
-    futures = (0..99).to_a.map do |x|
+    futures = (0..50).to_a.map do |x|
       worker_pool.future.work(x)
     end
     futures.map(&:value) #wait for all jobs
     worker_pool.terminate
 
-!SLIDE biggercode
+!SLIDE biggishcode
 ###Futuroscope
+
+<div class="corner"><span class="done">••••••</span><span class="todo">••</span></div>
 
     @@@ ruby
     require 'forwardable'
     require 'set'
     require 'futuroscope/convenience'
 
-    (0..99).to_a.map do |x|
-      future{ sleep 0.1; puts x*x }
+    Futuroscope.default_pool.max_workers = 4
+    (0..50).to_a.map do |x|
+      future do
+        50.times{print [128000+x].pack "U*"}
+      end
     end
 
 ## `github.com/codegram/futuroscope`
@@ -115,18 +135,20 @@
 !SLIDE
 ###DRB
 
+<div class="corner"><span class="done">•••••••</span><span class="todo">•</span></div>
+
     @@@ ruby
     require 'drb'
     server_pid = fork do
-      DRb.start_service "druby://localhost:28371", (0..99).to_a
+      DRb.start_service "druby://localhost:28371", (0..50).to_a
       DRb.thread.join
     end
     work_q = DRbObject.new nil, "druby://localhost:28371"
-    worker_pids = (0...10).map do |i|
+    worker_pids = (0...4).map do |i|
       fork do
         #sleep(i) #else DRb::DRbConnError in ruby < 2.0
         while x = work_q.pop
-          sleep 0.1; puts x*x
+          50.times{print [128000+x].pack "U*"}
         end
       end
     end
@@ -138,13 +160,15 @@
 !SLIDE
 ### `multi_headed_` `greek_monster`
 
+<div class="corner"><span class="done">••••••••</span></div>
+
     @@@ruby
     require 'multi_headed_greek_monster'
 
-    monster = MultiHeadedGreekMonster.new(nil, 10) do |x, work|
-      sleep 0.1; puts x*x
+    monster = MultiHeadedGreekMonster.new(nil, 4) do |x, work|
+      50.times{print [128000+x].pack "U*"}
     end
-    (0..100).to_a.each do |x|
+    (0..50).to_a.each do |x|
       monster.feed(x)
     end
     monster.finish
@@ -222,7 +246,35 @@
     end
 
 !SLIDE
-(diagram)
+
+<div class="serverworker"><span class="server">Server</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <span class="worker">Worker</span></div>
+
+<div class="server"><div class="x">
+<code>Server.create</code>
+</div></div>
+
+<div class="server"><div class="x">
+<code>SQL INSERT</code>
+</div></div>
+
+<div class="server"><div class="x">
+<code>after_create</code>
+</div></div>
+
+<div class="server"><div class="x">Job Enqueue</div></div>
+
+<div class="worker"><div class="x">Job Dequeue</div></div>
+
+<div class="worker"><div class="x">
+<code>SQL SELECT</code>
+</div></div>
+
+<div class="worker"><div class="x">ERROR</div></div>
+
+<div class="server"><div class="x">
+<code>SQL COMMIT</code>
+</div></div>
+
 
 !SLIDE
 ### Hack ActiveRecord
