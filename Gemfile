@@ -8,5 +8,3 @@ gem 'showoff', :git => "git://github.com/jacobo/showoff.git"
 
 #TODO: what is this?
 gem 'gli', "1.6.0"
-
-gem 'pry'

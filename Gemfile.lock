@@ -15,17 +15,11 @@ GEM
   specs:
     blankslate (2.1.2.4)
     bluecloth (2.2.0)
-    coderay (1.0.9)
     gli (1.6.0)
     json (1.8.0)
-    method_source (0.8.1)
     nokogiri (1.5.9)
     parslet (1.5.0)
       blankslate (~> 2.0)
-    pry (0.9.12)
-      coderay (~> 1.0.5)
-      method_source (~> 0.8)
-      slop (~> 3.4)
     rack (1.5.2)
     rack-protection (1.5.0)
       rack
@@ -34,7 +28,6 @@ GEM
       rack (~> 1.3, >= 1.3.6)
       rack-protection (~> 1.2)
       tilt (~> 1.3, >= 1.3.3)
-    slop (3.4.4)
     tilt (1.3.6)
 
 PLATFORMS
@@ -44,6 +37,5 @@ DEPENDENCIES
   bluecloth
   gli (= 1.6.0)
   nokogiri
-  pry
   showoff!
   sinatra (= 1.3.2)

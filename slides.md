@@ -15,12 +15,28 @@
 .notes progression of sequential -> threaded -> multi-machine... easy -> hard
 .notes tim's list of interesting things https://gist.github.com/halorgium/3724a6c202f81f33c8c6
 
-!SLIDE
+!SLIDE biggercode
+### What do I know?
+
+    @@@ ruby
+    ObjectSpace.
+    each_object(IRB::Context) do |x|
+      x.instance_variables.each do |i|
+        val = x.instance_variable_get(i)
+        if val.is_a?(String)
+          str = [128150].pack"U*"
+          val.gsub!(">", str)
+        end
+      end
+    end
+
+!SLIDE[bg=images/goldengate.jpg]
 ### How to Fail at Background Jobs
+<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 ## `jacobo.github.com/background_jobs_kaigi`
 
-!SLIDE
-### Doing Work in Parallel
+!SLIDE[bg=images/background_jobs.png] black
+&nbsp;
 
 !SLIDE biggercode
 ### The simplest thing that can possibly work
@@ -175,16 +191,11 @@
 
 `github.com/engineyard/multi_headed_greek_monster`
 
-!SLIDE
-### How to Fail at Background Jobs
-## `jacobo.github.com/background_jobs_kaigi`
+!SLIDE[bg=images/bugs.jpg]
+### The Story of a Bug
 
-!SLIDE
-#Engine Yard
-(we run servers)
-
-!SLIDE
-#The Story of a Bug
+!SLIDE[bg=images/engineyardcloud.png]
+### Engine Yard
 
 !SLIDE
 ### Starling, Workling
@@ -247,7 +258,7 @@
 
 !SLIDE
 
-<div class="serverworker"><span class="server">Server</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <span class="worker">Worker</span></div>
+<div class="serverworker"><span class="server">App</span> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <span class="worker">Worker</span></div>
 
 <div class="server"><div class="x">
 <code>Server.create</code>
@@ -338,38 +349,28 @@
 ## `http://bitly.com/hlUiBc`
 
 !SLIDE
-### What we really wanted?
+### Asynchronous workers are like a service that hasn't been extracted
 
     @@@ ruby
-    class ServersController < ApplicationController
-
-      def create
-        server = Server.create!(params[:server])
-        Thread.new{ server.boot! }
-        redirect_to server_url(server)
+    class Server < ActiveRecord::Base
+      after_create do |s|
+        s.remote_id = Provisioning::Client.post(
+          "/boot_server", s.attributes_for_provisioning)
+        s.save!
       end
-
     end
 
-## Background Work should not interfere with Request Processing.
-
-.notes BUT: Thread.new could still eat up some CPU before the request finishes. Graceful Rolling Restarts while requests are in-progress is hard/error-prone enough. Adding workers makes it worse.
-
-!SLIDE
-### Asynchronous workers are like a service that hasn't been extracted
 
 !SLIDE[bg=images/ey_soa.png]
 &nbsp;
 
-.notes include and specifically mention the provisioning service
-
-!SLIDE moredarkness bullets incremental bigger-bullets
+!SLIDE[bg=images/three.jpg] moredarkness bullets incremental bigger-bullets
 ###3 Parts
 * Loop
 * Runner
 * Queue
 
-!SLIDE moredarkness bullets bigger-bullets highlight0
+!SLIDE[bg=images/three.jpg] moredarkness moredarkness bullets bigger-bullets highlight0
 ###3 Parts
 * Loop
 * Runner
@@ -397,29 +398,46 @@
         @app.call(env = @request.read(client))
       ...
     end
-
 !SLIDE
-### Resque
+### Unicorn
+
+<li class="arrow_box">&nbsp;</li>
 
     @@@ ruby
-    def work(interval = 5, &block)
-      loop do
-        run_hook :before_fork, job
-
-        if job = reserve
-          if @child = fork
-            procline "Forked #{@child} at #{Time.now.to_i}"
-            Process.wait
-          else
-            procline "Processing #{job.queue} since #{Time.now.to_i}"
-            perform(job, &block)
-            exit! unless @cant_fork
-          end
+    def worker_loop(worker)
+      ...
+      while sock = ready.shift
+        if client = sock.kgio_tryaccept
+          process_client(client)
+          nr += 1
+          worker.tick = Time.now.to_i
         end
+        break if nr < 0
       end
+      ...
+    end
 
-`github.com/defunkt/resque/blob/master/lib/resque/worker.rb`
+    def process_client(client)
+      status, headers, body =
+        @app.call(env = @request.read(client))
+      ...
+    end
 
+!SLIDE biggishcode
+### Hack Unicorn
+
+    @@@ ruby
+    Unicorn::Worker.class_eval do
+      alias :old_tick= :tick=
+      def tick=(val)
+        if(job = REDIS.lpop("jobs_q"))
+          sleep 2
+          x = job.to_i
+          50.times{print [128000+x].pack "U*"}
+        end
+        self.old_tick = val
+      end
+    end
 
 !SLIDE
 ### EventMachine
@@ -444,37 +462,41 @@
 
 `github.com/eventmachine/eventmachine/blob/master/ext/em.cpp`
 
-!SLIDE
-### EM.next_tick
-
-    @@@ ruby
-    require 'eventmachine'
-    EM.run {
-      EM.start_server(host, port, self)
-    }
-
-    EM.next_tick{ puts "do something" }
-
-!SLIDE
+!SLIDE biggercode
 ### Thin
 
     @@@ ruby
-    class ServersController < ApplicationController
-
-      def create
-        server = Server.create!(params[:server])
-        EM.next_tick{ server.boot! }
-        redirect_to server_url(server)
-      end
-
-    end
+    EM.next_tick{ ... }
 
 !SLIDE
+### Resque
+
+    @@@ ruby
+    def work(interval = 5, &block)
+      loop do
+        run_hook :before_fork, job
+
+        if job = reserve
+          if @child = fork
+            procline "Forked #{@child} at #{Time.now.to_i}"
+            Process.wait
+          else
+            procline "Processing #{job.queue} since #{Time.now.to_i}"
+            perform(job, &block)
+            exit! unless @cant_fork
+          end
+        end
+      end
+
+`github.com/defunkt/resque/blob/master/lib/resque/worker.rb`
+
+!SLIDE biggercode
 ### EM-Resque ?
 
 ## `github.com/SponsorPay/em-resque`
 
 ## OR...
+<br/>
 
     @@@ ruby
     worker = Resque::Worker.new("*")
@@ -518,8 +540,24 @@
 
 # [`torquebox.org`](http://torquebox.org)
 
-!SLIDE
+!SLIDE[bg=images/mavs.jpg]
 ### Failing at Loops
+
+!SLIDE
+### What were we trying to do?
+
+    @@@ ruby
+    after_create do |server|
+      Thread.new{ server.boot! }
+    end
+
+    after_create do |server|
+      UnicornHax.run{ server.boot! }
+    end
+
+    after_create do |server|
+      EM.next_tick{ server.boot! }
+    end
 
 !SLIDE
 ### Cron jobs are hard
@@ -556,13 +594,15 @@
 
 .notes resque is already in a loop, why can't it check for work and run it
 
-!SLIDE
-### Give me hooks!
+!SLIDE bullets incremental wanted bulletsbigger
+### WANTED
+### hooks!
 
 * Unicorn/Rack after-request
 * Resque idle-tick
+* Rails 4 Q Integration
 
-!SLIDE moredarkness bullets bigger-bullets highlight1
+!SLIDE[bg=images/three.jpg] moredarkness moredarkness bullets bigger-bullets highlight1
 ###3 Parts
 * Loop
 * Runner
@@ -645,38 +685,24 @@
 
 # `github.com/arya/bluepill`
 
-!SLIDE
+!SLIDE[bg=images/chicken.jpg]
 ### Failing at Runners
 
 !SLIDE
-### Graceful restart
+###Deploying
 
-# Has your deploy succeeded if your workers haven't all restarted yet?
+<div class="worker"><div class="x">Startup New Worker</div></div>
 
-!SLIDE
-    @@@ruby
-    class TrapLoop
-      trap('TERM') { stop! }
-      trap('INT')  { stop! }
-      trap('SIGTERM') { stop! }
+<div class="server"><div class="x">Wait to Finish Current Job</div></div>
 
-      def self.stop!
-        @loop = false
-      end
-      def self.safe_exit_point!
-        if @started && !@loop
-          raise Interrupt
-        end
-      end
-      def self.start(&block)
-        @started = true
-        @loop = true
-        while(@loop) do
-          yield
-          safe_exit_point!
-        end
-      end
-    end
+<div class="server"><div class="x">Shutdown</div></div>
+
+<div class="server"><div class="x">Timeout?</div></div>
+
+<div class="server"><div class="x">Kill?</div></div>
+
+<div class="worker"><div class="x">Do Work</div></div>
+
 
 !SLIDE
 ### Zombie Workers
@@ -694,7 +720,15 @@
 
 # Lose their connections
 
-!SLIDE moredarkness bullets bigger-bullets highlight2
+!SLIDE bullets incremental wanted bulletsbigger
+### WANTED
+### Better Tools!
+
+* "Web Job Server" concept
+* Monitoring of the dead
+* Check "Code Version" before job execution
+
+!SLIDE[bg=images/three.jpg] moredarkness moredarkness bullets bigger-bullets highlight2
 ###3 Parts
 * Loop
 * Runner
@@ -760,18 +794,7 @@
 
     end
 
-!SLIDE
-### Flood Redis
-
-    @@@ ruby
-    if success
-      redis.sadd("job:#{payload.id}:progress",
-        "succeeded: #{Time.now.to_s}")
-    else
-      redis.sadd("job:#{payload.id}:progress",
-        "failed: #{Time.now.to_s}")
-
-!SLIDE
+!SLIDE[bg=images/seals.jpg]
 ### Truly Failing at Background Jobs
 
 !SLIDE[bg=images/job_dependencies.png]
@@ -809,33 +832,39 @@
 
 # [`rubygems.org/search?query=resque`](http://rubygems.org/search?query=resque)
 
-!SLIDE
-### Model it in your Database
-(not Redis)
+!SLIDE bullets incremental wanted bulletsbigger
+### WANTED
+### Better Tools!
 
-!SLIDE
+* Run-models
+* Storage-models
+* Inter-Worker Communication
+
+!SLIDE bullets incremental bulletsbigger
+### "Best Practices"
+* Idempotence (retriable jobs)
+* Error Tracking (`rollbar.com`)
+* Model jobs as ActiveRecord objects (persist to DB)
+* Monitor Extensively
+
+!SLIDE[bg=images/conflict.jpg]
+### Conflicting Goals
+
+!SLIDE[bg=images/alone.jpg]
 ### You Are not Alone
 
-!SLIDE
-### How to do Background Jobs Conservatively
-* Idempotence
-* two
-* three
-
-!SLIDE
-### What to do:
-contribute to resque
-contribute to celluloid
-
-!SLIDE bullets incremental
+!SLIDE[bg=images/rockaway.jpg]
 ### We deserve better
 
-* Reliable/Restartable workers
-* Integration with App Server and Deploys
-* Inter-worker communication
-* Monitoring/Tracking
+!SLIDE bullets incremental bulletsbigger
+### TODO
+* Contribute to Resque `github.com/resque`
+* Contribute to Celluloid `github.com/celluloid`
 
-.notes need to have this explained better (especially Inter-worker communication)
-
-!SLIDE
+!SLIDE[bg=images/wave.jpg]
 ### Questions
+<br/><br/><br/><br/>
+<br/><br/><br/><br/>
+<br/><br/><br/><br/><br/>
+## [@beanstalksurf](http://twitter.com/beanstalksurf)
+## `jacobo.github.com/background_jobs_kaigi`
