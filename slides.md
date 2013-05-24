@@ -15,20 +15,13 @@
 .notes progression of sequential -> threaded -> multi-machine... easy -> hard
 .notes tim's list of interesting things https://gist.github.com/halorgium/3724a6c202f81f33c8c6
 
-!SLIDE biggercode
-### What do I know?
+!SLIDE[bg=images/ey-bg.png] reallybig
+#Ruby 2.0 GA
+#on
+#Engine Yard Cloud
 
-    @@@ ruby
-    ObjectSpace.
-    each_object(IRB::Context) do |x|
-      x.instance_variables.each do |i|
-        val = x.instance_variable_get(i)
-        if val.is_a?(String)
-          str = [128150].pack"U*"
-          val.gsub!(">", str)
-        end
-      end
-    end
+!SLIDE[bg=images/banjo.jpg]
+### What do I know?
 
 !SLIDE[bg=images/goldengate.jpg]
 ### How to Fail at Background Jobs
@@ -760,7 +753,6 @@
         while(server_id = REDIS.lpop("server_boot_jobs"))
           if server = Server.find_by_id(server_id)
             server.boot!
-            TrapLoop.safe_exit_point!
           end
         end
       end
