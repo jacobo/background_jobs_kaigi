@@ -38,8 +38,6 @@
     
       <script type="text/javascript" src="./js/sh_lang/sh_html.min.js"></script>
     
-      <script type="text/javascript" src="./js/sh_lang/sh_changelog.min.js"></script>
-    
       <script type="text/javascript" src="./js/sh_lang/sh_sh.min.js"></script>
     
   
@@ -127,14 +125,8 @@
 </div>
 </div>
 </body></html><html><body>
-<div style="background: url('file/./images/banjo.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/3">
-<h3>What do I know?</h3>
-</div>
-</div>
-</body></html><html><body>
 <div style="background: url('file/./images/goldengate.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/4">
+<div class="content" ref="./slides/3">
 <h3>How to Fail at Background Jobs</h3>
 
 <p><br><br><br><br><br><br><br><br><br><br><br><br></p>
@@ -143,9 +135,15 @@
 </div>
 </div>
 </body></html><html><body>
+<div style="background: url('file/./images/banjo.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content" ref="./slides/4">
+<h3>What do I know?</h3>
+</div>
+</div>
+</body></html><html><body>
 <div style="background: url('file/./images/background_jobs.png') center no-repeat;" class="slide" data-transition="none">
 <div class="content black" ref="./slides/5">
-<p>&#160;</p>
+<p> </p>
 </div>
 </div>
 </body></html><html><body>
@@ -380,7 +378,7 @@ ServerBootJob.async_boot_server(server.id)
 Workling::Remote.dispatcher =
   Workling::Remote::Runners::StarlingRunner.new</code></pre>
 
-<p>&#160;</p>
+<p> </p>
 
 <pre class="sh_ruby"><code>starling -f config/starling.yml
 script/workling_client run</code></pre>
@@ -433,7 +431,7 @@ end</code></pre>
 <div class="slide" data-transition="none">
 <div class="content" ref="./slides/20">
 <div class="serverworker">
-<span class="server">App</span> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; <span class="worker">Worker</span>
+<span class="server">App</span>                 <span class="worker">Worker</span>
 </div>
 
 <div class="server"><div class="x">
@@ -554,7 +552,7 @@ end</code></pre>
 </body></html><html><body>
 <div style="background: url('file/./images/ey_soa.png') center no-repeat;" class="slide" data-transition="none">
 <div class="content" ref="./slides/26">
-<p>&#160;</p>
+<p> </p>
 </div>
 </div>
 </body></html><html><body>
@@ -583,7 +581,35 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/29">
+<div class="content squeezecode" ref="./slides/29">
+<pre class="sh_ruby"><code>class TrapLoop
+  trap('TERM') { stop! }
+  trap('INT')  { stop! }
+  trap('SIGTERM') { stop! }
+
+  def self.start(&amp;block)
+    @started = true
+    @loop = true
+    while(@loop) do
+      yield
+      safe_exit_point!
+    end
+  end
+
+  def self.stop!
+    @loop = false
+  end
+
+  def self.safe_exit_point!
+    if @started &amp;&amp; !@loop
+      raise Interrupt
+    end
+  end</code></pre>
+</div>
+</div>
+</body></html><html><body>
+<div class="slide" data-transition="none">
+<div class="content" ref="./slides/30">
 <h3>Unicorn</h3>
 
 <pre class="sh_ruby"><code>def worker_loop(worker)
@@ -608,11 +634,11 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/30">
+<div class="content" ref="./slides/31">
 <h3>Unicorn</h3>
 
 <p></p>
-<li class="arrow_box">&#160;</li>
+<li class="arrow_box"> </li>
 
 <pre class="sh_ruby"><code>def worker_loop(worker)
   ...
@@ -636,7 +662,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggishcode" ref="./slides/31">
+<div class="content biggishcode" ref="./slides/32">
 <h3>Hack Unicorn</h3>
 
 <pre class="sh_ruby"><code>Unicorn::Worker.class_eval do
@@ -654,7 +680,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/32">
+<div class="content" ref="./slides/33">
 <h3>EventMachine</h3>
 
 <pre class="sh_c"><code>void EventMachine_t::Run()
@@ -679,7 +705,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/33">
+<div class="content biggercode" ref="./slides/34">
 <h3>Thin</h3>
 
 <pre class="sh_ruby"><code>EM.next_tick{ ... }</code></pre>
@@ -687,7 +713,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/34">
+<div class="content" ref="./slides/35">
 <h3>Resque</h3>
 
 <pre class="sh_ruby"><code>def work(interval = 5, &amp;block)
@@ -711,7 +737,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/35">
+<div class="content biggercode" ref="./slides/36">
 <h3>EM-Resque ?</h3>
 
 <h2><a href="http://github.com/SponsorPay/em-resque"><code>github.com/SponsorPay/em-resque</code></a></h2>
@@ -721,7 +747,7 @@ end</code></pre>
 <p><br></p>
 
 <pre class="sh_ruby"><code>worker = Resque::Worker.new("*")
-EventMachine.add_periodic_timer( 0.1 ) do
+EM.add_periodic_timer( 0.1 ) do
   if job = worker.reserve
     worker.perform(job)
   end
@@ -730,7 +756,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/36">
+<div class="content" ref="./slides/37">
 <h3>Sucker Punch</h3>
 
 <pre class="sh_ruby"><code>class Worker
@@ -747,7 +773,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/37">
+<div class="content" ref="./slides/38">
 <h3>Sidekiq</h3>
 
 <h1><a href="http://sidekiq.org"><code>sidekiq.org</code></a></h1>
@@ -763,7 +789,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/chris.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/38">
+<div class="content" ref="./slides/39">
 <h3>Torquebox</h3>
 
 <h1><a href="http://torquebox.org"><code>torquebox.org</code></a></h1>
@@ -771,13 +797,13 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/mavs.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/39">
+<div class="content" ref="./slides/40">
 <h3>Failing at Loops</h3>
 </div>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/40">
+<div class="content" ref="./slides/41">
 <h3>What were we trying to do?</h3>
 
 <pre class="sh_ruby"><code>after_create do |server|
@@ -795,37 +821,16 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/41">
+<div class="content" ref="./slides/42">
 <h3>Cron jobs are hard</h3>
 
-<h2>database configuration does not specify adapter</h2>
+<h2>Let me write ruby</h2>
 
-<pre class="sh_html"><code>.../activerecord-3.2.11/.../connection_specification.rb:47:in `resolve_hash_connection': 
-database configuration does not specify adapter (ActiveRecord::AdapterNotSpecified)
-  from .../activerecord-3.2.11/.../connection_specification.rb:41:in `resolve_string_connection'
-  from .../activerecord-3.2.11/.../connection_specification.rb:25:in `spec'
-  from .../activerecord-3.2.11/.../connection_specification.rb:130:in `establish_connection'
-  from .../activerecord-3.2.11/.../railtie.rb:82:in `block (2 levels) in &lt;class:Railtie&gt;'
-  from .../activesupport-3.2.11/.../lazy_load_hooks.rb:36:in `instance_eval'
-  from .../activesupport-3.2.11/.../lazy_load_hooks.rb:36:in `execute_hook'
-  from .../activesupport-3.2.11/.../lazy_load_hooks.rb:43:in `block in run_load_hooks'
-  from .../activesupport-3.2.11/.../lazy_load_hooks.rb:42:in `each'
-  ...</code></pre>
+<pre class="sh_html"><code># (- installed on Fri May 24 16:47:05 2013)
+# (Cron version V5.0 -- $Id: crontab.c,v 1.12 2004/01/23 18:56:42 vixie Exp $)
+10 * * * * cd /data/app/current &amp;&amp; RAILS_ENV=production script/periodic_thing</code></pre>
 
 <h2><a href="http://blog.engineyard.com/2013/cron-jobs"><code>blog.engineyard.com/2013/cron-jobs</code></a></h2>
-</div>
-</div>
-</body></html><html><body>
-<div class="slide" data-transition="none">
-<div class="content" ref="./slides/42">
-<h3>Resque-scheduler</h3>
-
-<pre class="sh_changelog"><code>queue_cleanup_process:
-  cron: "0 0 * * *"
-  class: CleanupAllTheThings
-  queue: low
-  args:
-  description: "Cleanup pending things"</code></pre>
 
 <h2><a href="http://github.com/bvandenbos/resque-scheduler"><code>github.com/bvandenbos/resque-scheduler</code></a></h2>
 
@@ -1211,7 +1216,7 @@ end</code></pre>
 
 <h2><a href="http://twitter.com/beanstalksurf">@beanstalksurf</a></h2>
 
-<h2><a href="http://jacobo.github.com/background_jobs_kaigi"><code>jacobo.github.com/background_jobs_kaigi</code></a></h2>
+<h2><a href="http://jacobo.github.com/talks"><code>jacobo.github.com/talks</code></a></h2>
 </div>
 </div>
 </body></html></div>
