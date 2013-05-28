@@ -191,6 +191,23 @@
 ### Engine Yard
 
 !SLIDE
+### Boot a Server
+
+    @@@ ruby
+    class Server < ActiveRecord::Base
+      after_create do |s|
+        ServerBootJob.async_boot_server(s.id)
+      end
+    end
+
+    class ServerBootJob
+      def boot_server(server_id)
+        server = Server.find(server_id)
+        ...
+      end
+    end
+
+!SLIDE
 ### Starling, Workling
 
     @@@ ruby
@@ -237,12 +254,12 @@
     @@@ ruby
     class Server < ActiveRecord::Base
       after_create do |s|
-        ServerBootJob.async_run(s.id)
+        ServerBootJob.async_boot_server(s.id)
       end
     end
 
-    class ServerBootJob < BackgroundJob
-      def run(server_id)
+    class ServerBootJob
+      def boot_server(server_id)
         #sleep 1 ?
         server = Server.find(server_id)
         ...
@@ -287,7 +304,7 @@
     class Server < ActiveRecord::Base
       after_create do |s|
         s.commit_callback do
-          ServerBooter.async_run(s.id)
+          ServerBooter.async_boot_server(s.id)
         end
       end
     end
@@ -309,13 +326,13 @@
     class ServerBooter
       def self.create_and_boot_server!(...)
         server = Server.create!(...)
-        ServerBootJob.async_run(server.id)
+        ServerBootJob.async_boot_server(server.id)
         server
       end
     end
 
-    class ServerBootJob < BackgroundJob
-      def run(server_id)
+    class ServerBootJob
+      def boot_server(server_id)
         server = Server.find(server_id)
         ...
       end
@@ -327,7 +344,7 @@
     @@@ ruby
     class Server < ActiveRecord::Base
       after_commit do |s|
-        ServerBooter.async_run(s.id)
+        ServerBooter.async_boot_server(s.id)
       end
     end
 
