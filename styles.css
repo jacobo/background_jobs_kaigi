@@ -241,6 +241,10 @@ table {
 table td {
   padding: 12px;
 }
+.squeezecode pre {
+  margin-top: -10px;
+  border: none;
+}
 .smallcode pre {
   font-size: 15px;
 }

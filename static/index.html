@@ -117,25 +117,24 @@
 </div>
 </div>
 </body></html><html><body>
-<div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/2">
-<h3>What do I know?</h3>
+<div style="background: url('file/./images/ey-bg.png') center no-repeat;" class="slide" data-transition="none">
+<div class="content reallybig" ref="./slides/2">
+<h1>Ruby 2.0 GA</h1>
 
-<pre class="sh_ruby"><code>ObjectSpace.
-each_object(IRB::Context) do |x|
-  x.instance_variables.each do |i|
-    val = x.instance_variable_get(i)
-    if val.is_a?(String)
-      str = [128150].pack"U*"
-      val.gsub!("&gt;", str)
-    end
-  end
-end</code></pre>
+<h1>on</h1>
+
+<h1>Engine Yard Cloud</h1>
+</div>
+</div>
+</body></html><html><body>
+<div style="background: url('file/./images/banjo.jpg') center no-repeat;" class="slide" data-transition="none">
+<div class="content" ref="./slides/3">
+<h3>What do I know?</h3>
 </div>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/goldengate.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/3">
+<div class="content" ref="./slides/4">
 <h3>How to Fail at Background Jobs</h3>
 
 <p><br><br><br><br><br><br><br><br><br><br><br><br></p>
@@ -145,13 +144,13 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/background_jobs.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content black" ref="./slides/4">
+<div class="content black" ref="./slides/5">
 <p>&#160;</p>
 </div>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/5">
+<div class="content biggercode" ref="./slides/6">
 <h3>The simplest thing that can possibly work</h3>
 
 <div class="corner">
@@ -167,7 +166,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/6">
+<div class="content biggercode" ref="./slides/7">
 <h3>Threads</h3>
 
 <div class="corner">
@@ -189,7 +188,7 @@ workers.map(&amp;:join); "ok"</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggishcode" ref="./slides/7">
+<div class="content biggishcode" ref="./slides/8">
 <h3>Thread Pool</h3>
 
 <div class="corner">
@@ -214,7 +213,7 @@ workers.map(&amp;:join); "ok"</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggishcode" ref="./slides/8">
+<div class="content biggishcode" ref="./slides/9">
 <h3>Redis (&amp; Threads)</h3>
 
 <div class="corner">
@@ -239,7 +238,7 @@ workers.map(&amp;:join)</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggishcode" ref="./slides/9">
+<div class="content biggishcode" ref="./slides/10">
 <h3>Celluloid</h3>
 
 <div class="corner">
@@ -263,7 +262,7 @@ worker_pool.terminate</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggishcode" ref="./slides/10">
+<div class="content biggishcode" ref="./slides/11">
 <h3>Futuroscope</h3>
 
 <div class="corner">
@@ -286,7 +285,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/11">
+<div class="content" ref="./slides/12">
 <h3>DRB</h3>
 
 <div class="corner">
@@ -315,7 +314,7 @@ Process.kill("KILL", server_pid)</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/12">
+<div class="content" ref="./slides/13">
 <h3>
 <code>multi_headed_</code> <code>greek_monster</code>
 </h3>
@@ -337,19 +336,38 @@ monster.finish</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/bugs.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/13">
+<div class="content" ref="./slides/14">
 <h3>The Story of a Bug</h3>
 </div>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/engineyardcloud.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/14">
+<div class="content" ref="./slides/15">
 <h3>Engine Yard</h3>
 </div>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/15">
+<div class="content" ref="./slides/16">
+<h3>Boot a Server</h3>
+
+<pre class="sh_ruby"><code>class Server &lt; ActiveRecord::Base
+  after_create do |s|
+    ServerBootJob.async_boot_server(s.id)
+  end
+end
+
+class ServerBootJob
+  def boot_server(server_id)
+    server = Server.find(server_id)
+    ...
+  end
+end</code></pre>
+</div>
+</div>
+</body></html><html><body>
+<div class="slide" data-transition="none">
+<div class="content" ref="./slides/17">
 <h3>Starling, Workling</h3>
 
 <pre class="sh_ruby"><code>class ServerBootJob &lt; Workling::Base
@@ -370,7 +388,7 @@ script/workling_client run</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/16">
+<div class="content" ref="./slides/18">
 <h3>RabbitMQ, AMQP</h3>
 
 <pre class="sh_ruby"><code>connection = AMQP.connect(:host =&gt; '127.0.0.1')
@@ -393,17 +411,17 @@ exchange.publish JSON.encode(:server_id =&gt; 10),
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/17">
+<div class="content" ref="./slides/19">
 <h3>ActiveRecord:: RecordNotFound</h3>
 
 <pre class="sh_ruby"><code>class Server &lt; ActiveRecord::Base
   after_create do |s|
-    ServerBootJob.async_run(s.id)
+    ServerBootJob.async_boot_server(s.id)
   end
 end
 
-class ServerBootJob &lt; BackgroundJob
-  def run(server_id)
+class ServerBootJob
+  def boot_server(server_id)
     #sleep 1 ?
     server = Server.find(server_id)
     ...
@@ -413,7 +431,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/18">
+<div class="content" ref="./slides/20">
 <div class="serverworker">
 <span class="server">App</span> &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; <span class="worker">Worker</span>
 </div>
@@ -447,13 +465,13 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/19">
+<div class="content" ref="./slides/21">
 <h3>Hack ActiveRecord</h3>
 
 <pre class="sh_ruby"><code>class Server &lt; ActiveRecord::Base
   after_create do |s|
     s.commit_callback do
-      ServerBooter.async_run(s.id)
+      ServerBooter.async_boot_server(s.id)
     end
   end
 end
@@ -472,19 +490,19 @@ def commit_callback
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/20">
+<div class="content" ref="./slides/22">
 <h3>Service Object</h3>
 
 <pre class="sh_ruby"><code>class ServerBooter
   def self.create_and_boot_server!(...)
     server = Server.create!(...)
-    ServerBootJob.async_run(server.id)
+    ServerBootJob.async_boot_server(server.id)
     server
   end
 end
 
-class ServerBootJob &lt; BackgroundJob
-  def run(server_id)
+class ServerBootJob
+  def boot_server(server_id)
     server = Server.find(server_id)
     ...
   end
@@ -493,12 +511,12 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/21">
+<div class="content" ref="./slides/23">
 <h3>after_commit</h3>
 
 <pre class="sh_ruby"><code>class Server &lt; ActiveRecord::Base
   after_commit do |s|
-    ServerBooter.async_run(s.id)
+    ServerBooter.async_boot_server(s.id)
   end
 end</code></pre>
 
@@ -511,7 +529,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content align-left" ref="./slides/22">
+<div class="content align-left" ref="./slides/24">
 <h3>after_commit</h3>
 
 <h2>"If any exceptions are raised within one of these callbacks, they will be ignored so that they don’t interfere with the other callbacks" -- Rails Guide</h2>
@@ -521,7 +539,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/23">
+<div class="content" ref="./slides/25">
 <h3>Asynchronous workers are like a service that hasn't been extracted</h3>
 
 <pre class="sh_ruby"><code>class Server &lt; ActiveRecord::Base
@@ -535,13 +553,13 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/ey_soa.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/24">
+<div class="content" ref="./slides/26">
 <p>&#160;</p>
 </div>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/three.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness bullets incremental bigger-bullets" ref="./slides/25">
+<div class="content moredarkness bullets incremental bigger-bullets" ref="./slides/27">
 <h3>3 Parts</h3>
 
 <ul>
@@ -553,7 +571,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/three.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness moredarkness bullets bigger-bullets highlight0" ref="./slides/26">
+<div class="content moredarkness moredarkness bullets bigger-bullets highlight0" ref="./slides/28">
 <h3>3 Parts</h3>
 
 <ul>
@@ -565,7 +583,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/27">
+<div class="content" ref="./slides/29">
 <h3>Unicorn</h3>
 
 <pre class="sh_ruby"><code>def worker_loop(worker)
@@ -590,7 +608,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/28">
+<div class="content" ref="./slides/30">
 <h3>Unicorn</h3>
 
 <p></p>
@@ -618,7 +636,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggishcode" ref="./slides/29">
+<div class="content biggishcode" ref="./slides/31">
 <h3>Hack Unicorn</h3>
 
 <pre class="sh_ruby"><code>Unicorn::Worker.class_eval do
@@ -636,7 +654,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/30">
+<div class="content" ref="./slides/32">
 <h3>EventMachine</h3>
 
 <pre class="sh_c"><code>void EventMachine_t::Run()
@@ -661,7 +679,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/31">
+<div class="content biggercode" ref="./slides/33">
 <h3>Thin</h3>
 
 <pre class="sh_ruby"><code>EM.next_tick{ ... }</code></pre>
@@ -669,7 +687,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/32">
+<div class="content" ref="./slides/34">
 <h3>Resque</h3>
 
 <pre class="sh_ruby"><code>def work(interval = 5, &amp;block)
@@ -693,7 +711,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content biggercode" ref="./slides/33">
+<div class="content biggercode" ref="./slides/35">
 <h3>EM-Resque ?</h3>
 
 <h2><a href="http://github.com/SponsorPay/em-resque"><code>github.com/SponsorPay/em-resque</code></a></h2>
@@ -712,7 +730,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/34">
+<div class="content" ref="./slides/36">
 <h3>Sucker Punch</h3>
 
 <pre class="sh_ruby"><code>class Worker
@@ -729,7 +747,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/35">
+<div class="content" ref="./slides/37">
 <h3>Sidekiq</h3>
 
 <h1><a href="http://sidekiq.org"><code>sidekiq.org</code></a></h1>
@@ -745,7 +763,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/chris.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/36">
+<div class="content" ref="./slides/38">
 <h3>Torquebox</h3>
 
 <h1><a href="http://torquebox.org"><code>torquebox.org</code></a></h1>
@@ -753,13 +771,13 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/mavs.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/37">
+<div class="content" ref="./slides/39">
 <h3>Failing at Loops</h3>
 </div>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/38">
+<div class="content" ref="./slides/40">
 <h3>What were we trying to do?</h3>
 
 <pre class="sh_ruby"><code>after_create do |server|
@@ -777,7 +795,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/39">
+<div class="content" ref="./slides/41">
 <h3>Cron jobs are hard</h3>
 
 <h2>database configuration does not specify adapter</h2>
@@ -799,7 +817,7 @@ database configuration does not specify adapter (ActiveRecord::AdapterNotSpecifi
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/40">
+<div class="content" ref="./slides/42">
 <h3>Resque-scheduler</h3>
 
 <pre class="sh_changelog"><code>queue_cleanup_process:
@@ -816,7 +834,7 @@ database configuration does not specify adapter (ActiveRecord::AdapterNotSpecifi
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content bullets incremental wanted bulletsbigger" ref="./slides/41">
+<div class="content bullets incremental wanted bulletsbigger" ref="./slides/43">
 <h3>WANTED</h3>
 
 <h3>hooks!</h3>
@@ -830,7 +848,7 @@ database configuration does not specify adapter (ActiveRecord::AdapterNotSpecifi
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/three.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness moredarkness bullets bigger-bullets highlight1" ref="./slides/42">
+<div class="content moredarkness moredarkness bullets bigger-bullets highlight1" ref="./slides/44">
 <h3>3 Parts</h3>
 
 <ul>
@@ -842,7 +860,7 @@ database configuration does not specify adapter (ActiveRecord::AdapterNotSpecifi
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/43">
+<div class="content" ref="./slides/45">
 <h3>God</h3>
 
 <pre class="sh_ruby"><code>5.times do |n|
@@ -864,7 +882,7 @@ database configuration does not specify adapter (ActiveRecord::AdapterNotSpecifi
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/44">
+<div class="content" ref="./slides/46">
 <h3>Daemons</h3>
 
 <pre class="sh_ruby"><code>require 'daemons'
@@ -887,7 +905,7 @@ Daemons.run(File.expand_path('../worker',  __FILE__), options)</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/45">
+<div class="content" ref="./slides/47">
 <h3>Monit</h3>
 
 <h2>(mess of bash)</h2>
@@ -903,7 +921,7 @@ then
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/46">
+<div class="content" ref="./slides/48">
 <h3>Bluepill</h3>
 
 <pre class="sh_ruby"><code>Bluepill.application("#{app_name}") do |app|
@@ -926,13 +944,13 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/chicken.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/47">
+<div class="content" ref="./slides/49">
 <h3>Failing at Runners</h3>
 </div>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/48">
+<div class="content" ref="./slides/50">
 <h3>Deploying</h3>
 
 <div class="worker"><div class="x">Startup New Worker</div></div>
@@ -950,7 +968,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/49">
+<div class="content" ref="./slides/51">
 <h3>Zombie Workers</h3>
 
 <h1>Do not respond to kill</h1>
@@ -960,7 +978,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/50">
+<div class="content" ref="./slides/52">
 <h3>Untracked Workers</h3>
 
 <h1>A worker without a pidfile is not restarted</h1>
@@ -968,7 +986,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/51">
+<div class="content" ref="./slides/53">
 <h3>Idle Workers</h3>
 
 <h1>Lose their connections</h1>
@@ -976,7 +994,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content bullets incremental wanted bulletsbigger" ref="./slides/52">
+<div class="content bullets incremental wanted bulletsbigger" ref="./slides/54">
 <h3>WANTED</h3>
 
 <h3>Better Tools!</h3>
@@ -990,7 +1008,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/three.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content moredarkness moredarkness bullets bigger-bullets highlight2" ref="./slides/53">
+<div class="content moredarkness moredarkness bullets bigger-bullets highlight2" ref="./slides/55">
 <h3>3 Parts</h3>
 
 <ul>
@@ -1002,7 +1020,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/54">
+<div class="content" ref="./slides/56">
 <h3>Queue Basics</h3>
 
 <p><br></p>
@@ -1016,7 +1034,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/55">
+<div class="content" ref="./slides/57">
 <h3>DIY Redis Queue</h3>
 
 <pre class="sh_ruby"><code>REDIS = Redis.connect(:url =&gt; "redis://#{redishost}")
@@ -1030,7 +1048,6 @@ class ServerBootJob
     while(server_id = REDIS.lpop("server_boot_jobs"))
       if server = Server.find_by_id(server_id)
         server.boot!
-        TrapLoop.safe_exit_point!
       end
     end
   end
@@ -1039,7 +1056,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content bullets" ref="./slides/56">
+<div class="content bullets" ref="./slides/58">
 <h3>Resque Redis</h3>
 
 <ul>
@@ -1053,7 +1070,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/57">
+<div class="content" ref="./slides/59">
 <h3>Failing at Queues</h3>
 
 <h1>Re-Enqueue</h1>
@@ -1074,19 +1091,19 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/seals.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/58">
+<div class="content" ref="./slides/60">
 <h3>Truly Failing at Background Jobs</h3>
 </div>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/job_dependencies.png') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/59">
+<div class="content" ref="./slides/61">
 <h3>Job Dependencies</h3>
 </div>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/60">
+<div class="content" ref="./slides/62">
 <h3>Job Race Conditions</h3>
 
 <h1>1 ServerBoot Job</h1>
@@ -1096,7 +1113,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/61">
+<div class="content" ref="./slides/63">
 <h3>Resque Plugins</h3>
 
 <pre class="sh_ruby"><code>class ServerBooting
@@ -1119,7 +1136,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/62">
+<div class="content" ref="./slides/64">
 <h3>225 is a lot of <br> Resque Plugins</h3>
 
 <h1><a href="http://rubygems.org/search?query=resque"><code>rubygems.org/search?query=resque</code></a></h1>
@@ -1127,7 +1144,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content bullets incremental wanted bulletsbigger" ref="./slides/63">
+<div class="content bullets incremental wanted bulletsbigger" ref="./slides/65">
 <h3>WANTED</h3>
 
 <h3>Better Tools!</h3>
@@ -1141,7 +1158,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content bullets incremental bulletsbigger" ref="./slides/64">
+<div class="content bullets incremental bulletsbigger" ref="./slides/66">
 <h3>"Best Practices"</h3>
 
 <ul>
@@ -1154,25 +1171,25 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/conflict.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/65">
+<div class="content" ref="./slides/67">
 <h3>Conflicting Goals</h3>
 </div>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/alone.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/66">
+<div class="content" ref="./slides/68">
 <h3>You Are not Alone</h3>
 </div>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/rockaway.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/67">
+<div class="content" ref="./slides/69">
 <h3>We deserve better</h3>
 </div>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content bullets incremental bulletsbigger" ref="./slides/68">
+<div class="content bullets incremental bulletsbigger" ref="./slides/70">
 <h3>TODO</h3>
 
 <ul>
@@ -1185,7 +1202,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div style="background: url('file/./images/wave.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/69">
+<div class="content" ref="./slides/71">
 <h3>Questions</h3>
 
 <p><br><br><br><br>

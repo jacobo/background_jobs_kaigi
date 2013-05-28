@@ -20,13 +20,13 @@
 #on
 #Engine Yard Cloud
 
-!SLIDE[bg=images/banjo.jpg]
-### What do I know?
-
 !SLIDE[bg=images/goldengate.jpg]
 ### How to Fail at Background Jobs
 <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 ## `jacobo.github.com/background_jobs_kaigi`
+
+!SLIDE[bg=images/banjo.jpg]
+### What do I know?
 
 !SLIDE[bg=images/background_jobs.png] black
 &nbsp;
@@ -386,6 +386,33 @@
 * Runner
 * Queue
 
+!SLIDE squeezecode
+
+    @@@ ruby
+    class TrapLoop
+      trap('TERM') { stop! }
+      trap('INT')  { stop! }
+      trap('SIGTERM') { stop! }
+
+      def self.start(&block)
+        @started = true
+        @loop = true
+        while(@loop) do
+          yield
+          safe_exit_point!
+        end
+      end
+
+      def self.stop!
+        @loop = false
+      end
+
+      def self.safe_exit_point!
+        if @started && !@loop
+          raise Interrupt
+        end
+      end
+
 !SLIDE
 ### Unicorn
 
@@ -510,7 +537,7 @@
 
     @@@ ruby
     worker = Resque::Worker.new("*")
-    EventMachine.add_periodic_timer( 0.1 ) do
+    EM.add_periodic_timer( 0.1 ) do
       if job = worker.reserve
         worker.perform(job)
       end
@@ -572,33 +599,14 @@
 !SLIDE
 ### Cron jobs are hard
 
-## database configuration does not specify adapter
+## Let me write ruby
 
     @@@ html
-    .../activerecord-3.2.11/.../connection_specification.rb:47:in `resolve_hash_connection': 
-    database configuration does not specify adapter (ActiveRecord::AdapterNotSpecified)
-      from .../activerecord-3.2.11/.../connection_specification.rb:41:in `resolve_string_connection'
-      from .../activerecord-3.2.11/.../connection_specification.rb:25:in `spec'
-      from .../activerecord-3.2.11/.../connection_specification.rb:130:in `establish_connection'
-      from .../activerecord-3.2.11/.../railtie.rb:82:in `block (2 levels) in <class:Railtie>'
-      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:36:in `instance_eval'
-      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:36:in `execute_hook'
-      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:43:in `block in run_load_hooks'
-      from .../activesupport-3.2.11/.../lazy_load_hooks.rb:42:in `each'
-      ...
+    # (- installed on Fri May 24 16:47:05 2013)
+    # (Cron version V5.0 -- $Id: crontab.c,v 1.12 2004/01/23 18:56:42 vixie Exp $)
+    10 * * * * cd /data/app/current && RAILS_ENV=production script/periodic_thing
 
 ## `blog.engineyard.com/2013/cron-jobs`
-
-!SLIDE
-### Resque-scheduler
-
-    @@@ changelog
-    queue_cleanup_process:
-      cron: "0 0 * * *"
-      class: CleanupAllTheThings
-      queue: low
-      args:
-      description: "Cleanup pending things"
 
 ## `github.com/bvandenbos/resque-scheduler`
 
@@ -876,4 +884,4 @@
 <br/><br/><br/><br/>
 <br/><br/><br/><br/><br/>
 ## [@beanstalksurf](http://twitter.com/beanstalksurf)
-## `jacobo.github.com/background_jobs_kaigi`
+## `jacobo.github.com/talks`
