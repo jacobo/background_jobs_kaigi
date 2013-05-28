@@ -28,9 +28,6 @@
 !SLIDE[bg=images/banjo.jpg]
 ### What do I know?
 
-!SLIDE[bg=images/background_jobs.png] black
-&nbsp;
-
 !SLIDE biggercode
 ### The simplest thing that can possibly work
 
@@ -186,6 +183,9 @@
 
 !SLIDE[bg=images/bugs.jpg]
 ### The Story of a Bug
+
+!SLIDE[bg=images/background_jobs.png] black
+&nbsp;
 
 !SLIDE[bg=images/engineyardcloud.png]
 ### Engine Yard
@@ -369,10 +369,6 @@
         s.save!
       end
     end
-
-
-!SLIDE[bg=images/ey_soa.png]
-&nbsp;
 
 !SLIDE[bg=images/three.jpg] moredarkness bullets incremental bigger-bullets
 ###3 Parts
@@ -580,8 +576,8 @@
 !SLIDE[bg=images/mavs.jpg]
 ### Failing at Loops
 
-!SLIDE
-### What were we trying to do?
+!SLIDE biggercode
+### Lousy Hooks
 
     @@@ ruby
     after_create do |server|
@@ -589,11 +585,11 @@
     end
 
     after_create do |server|
-      UnicornHax.run{ server.boot! }
+      EM.next_tick{ server.boot! }
     end
 
     after_create do |server|
-      EM.next_tick{ server.boot! }
+      Rack.after_request{ server.boot! }
     end
 
 !SLIDE
@@ -854,15 +850,22 @@
 ### Better Tools!
 
 * Run-models
-* Storage-models
 * Inter-Worker Communication
+* ?
+
+!SLIDE multiimage
+### ?
+# ![tim](images/tim.jpg)
+# ![router](images/CoordinatorRouter.png)
+
+## `github.com/halorgium/celluloid-coordinator`
 
 !SLIDE bullets incremental bulletsbigger
 ### "Best Practices"
 * Idempotence (retriable jobs)
 * Error Tracking (`rollbar.com`)
 * Model jobs as ActiveRecord objects (persist to DB)
-* Monitor Extensively
+* Be Paranoid
 
 !SLIDE[bg=images/conflict.jpg]
 ### Conflicting Goals
