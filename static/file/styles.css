@@ -431,3 +431,7 @@ div.worker {
   margin: 0;
   font-size: 170px;
 }
+.multiimage img {
+  float: left;
+  padding: 5px;
+}

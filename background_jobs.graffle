@@ -839,6 +839,8 @@ App}</string>
 		<real>18</real>
 		<key>circoSeparation</key>
 		<real>0.0</real>
+		<key>dotRankSep</key>
+		<real>0.0</real>
 		<key>layoutEngine</key>
 		<string>dot</string>
 		<key>neatoSeparation</key>
@@ -853,7 +855,7 @@ App}</string>
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2013-05-24 22:31:30 +0000</string>
+	<string>2013-05-31 00:55:46 +0000</string>
 	<key>Modifier</key>
 	<string>Jacob</string>
 	<key>NotesVisible</key>
@@ -939,7 +941,7 @@ App}</string>
 			</dict>
 		</array>
 		<key>Frame</key>
-		<string>{{118, 25}, {1103, 861}}</string>
+		<string>{{640, 282}, {1103, 746}}</string>
 		<key>ListView</key>
 		<true/>
 		<key>OutlineWidth</key>
@@ -953,7 +955,7 @@ App}</string>
 		<key>SidebarWidth</key>
 		<integer>120</integer>
 		<key>VisibleRegion</key>
-		<string>{{-106, -84}, {968, 722}}</string>
+		<string>{{-106, -27}, {968, 607}}</string>
 		<key>Zoom</key>
 		<real>1</real>
 		<key>ZoomValues</key>
