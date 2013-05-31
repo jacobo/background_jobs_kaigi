@@ -3,7 +3,7 @@
 <br/><br/><br/><br/>
 <br/><br/><br/><br/>
 <br/><br/><br/><br/><br/>
-## [@beanstalksurf](http://twitter.com/beanstalksurf)
+# [@beanstalksurf](http://twitter.com/beanstalksurf)
 
 .notes take out the sleeps?
 .notes use the full work queue
@@ -112,7 +112,7 @@
         50.times{print [128000+x].pack "U*"}
       end
     end
-    worker_pool = Worker.pool(size: 10)
+    worker_pool = Worker.pool(size: 4)
     futures = (0..50).to_a.map do |x|
       worker_pool.future.work(x)
     end
@@ -163,23 +163,34 @@
 
 .notes STRESS the importance of killing your workers
 
-!SLIDE
-### `multi_headed_` `greek_monster`
+!SLIDE squeezecode h3topright
+### DCell
 
 <div class="corner"><span class="done">••••••••</span></div>
 
     @@@ruby
-    require 'multi_headed_greek_monster'
-
-    monster = MultiHeadedGreekMonster.new(nil, 4) do |x, work|
-      50.times{print [128000+x].pack "U*"}
+    require 'dcell'
+    class Worker
+      include Celluloid
+      def work(x)
+        50.times{sleep 0.1; print [128000+x].pack "U*"}
+      end
     end
-    (0..50).to_a.each do |x|
-      monster.feed(x)
+    worker_pids = (0...4).map do |i|
+      fork do
+        DCell.start id: "w#{i}", addr: "tcp://127.0.0.1:900#{i}"
+        Worker.supervise_as "worker#{i}"
+        sleep
+      end
     end
-    monster.finish
-
-`github.com/engineyard/multi_headed_greek_monster`
+    sleep 1 #wait for workers to start
+    DCell.start id: "main", addr: "tcp://127.0.0.1:9011"
+    futures = (0..50).map do |x|
+      i = x % 4
+      DCell::Node["w#{i}"]["worker#{i}"].future.work(x)
+    end
+    futures.map(&:value)
+    worker_pids.each{|pid| Process.kill("KILL", pid)}
 
 !SLIDE[bg=images/bugs.jpg]
 ### The Story of a Bug
@@ -850,7 +861,7 @@
 ### Better Tools!
 
 * Run-models
-* Inter-Worker Communication
+* Inter-Worker Communication (Callbacks, Futures)
 * ?
 
 !SLIDE multiimage
@@ -863,12 +874,15 @@
 !SLIDE bullets incremental bulletsbigger
 ### "Best Practices"
 * Idempotence (retriable jobs)
+* Redis locks (with expire)
+* `Resque.inline = true`
 * Error Tracking (`rollbar.com`)
-* Model jobs as ActiveRecord objects (persist to DB)
-* Be Paranoid
 
-!SLIDE[bg=images/conflict.jpg]
-### Conflicting Goals
+!SLIDE bullets incremental bulletsbigger
+### "Best Practices" cont.
+* Model jobs as ActiveRecord objects (persist to DB)
+* Pass Request IDs
+* Be Paranoid
 
 !SLIDE[bg=images/alone.jpg]
 ### You Are not Alone
@@ -876,7 +890,7 @@
 !SLIDE[bg=images/rockaway.jpg]
 ### We deserve better
 
-!SLIDE bullets incremental bulletsbigger
+!SLIDE bullets bulletsbigger
 ### TODO
 * Contribute to Resque `github.com/resque`
 * Contribute to Celluloid `github.com/celluloid`
@@ -885,6 +899,6 @@
 ### Questions
 <br/><br/><br/><br/>
 <br/><br/><br/><br/>
-<br/><br/><br/><br/><br/>
+<br/><br/><br/><br/>
 ## [@beanstalksurf](http://twitter.com/beanstalksurf)
-## `jacobo.github.com/talks`
+# `jacobo.github.com/talks`
