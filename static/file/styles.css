@@ -243,6 +243,7 @@ table td {
 }
 .squeezecode pre {
   margin-top: -10px;
+  margin-left: -30px;
   border: none;
 }
 .smallcode pre {
@@ -434,4 +435,10 @@ div.worker {
 .multiimage img {
   float: left;
   padding: 5px;
+}
+.h3topright h3 {
+  position: absolute;
+  top: 10px;
+  right: 0px;
+  width: 50%;
 }

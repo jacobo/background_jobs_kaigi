@@ -884,11 +884,11 @@
 * Pass Request IDs
 * Be Paranoid
 
-!SLIDE[bg=images/alone.jpg]
+!SLIDE[bg=images/together.jpg]
 ### You Are not Alone
 
-!SLIDE[bg=images/rockaway.jpg]
-### We deserve better
+!SLIDE[bg=images/pururan.jpg]
+### We can do better
 
 !SLIDE bullets bulletsbigger
 ### TODO
