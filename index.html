@@ -101,7 +101,7 @@
 <br><br><br><br>
 <br><br><br><br><br></p>
 
-<h2><a href="http://twitter.com/beanstalksurf">@beanstalksurf</a></h2>
+<h1><a href="http://twitter.com/beanstalksurf">@beanstalksurf</a></h1>
 
 <p class="notes">take out the sleeps?
 .notes use the full work queue
@@ -244,7 +244,7 @@ class Worker
     50.times{print [128000+x].pack "U*"}
   end
 end
-worker_pool = Worker.pool(size: 10)
+worker_pool = Worker.pool(size: 4)
 futures = (0..50).to_a.map do |x|
   worker_pool.future.work(x)
 end
@@ -306,24 +306,33 @@ Process.kill("KILL", server_pid)</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content" ref="./slides/12">
-<h3>
-<code>multi_headed_</code> <code>greek_monster</code>
-</h3>
+<div class="content squeezecode h3topright" ref="./slides/12">
+<h3>DCell</h3>
 
 <div class="corner"><span class="done">••••••••</span></div>
 
-<pre class="sh_ruby"><code>require 'multi_headed_greek_monster'
-
-monster = MultiHeadedGreekMonster.new(nil, 4) do |x, work|
-  50.times{print [128000+x].pack "U*"}
+<pre class="sh_ruby"><code>require 'dcell'
+class Worker
+  include Celluloid
+  def work(x)
+    50.times{sleep 0.1; print [128000+x].pack "U*"}
+  end
 end
-(0..50).to_a.each do |x|
-  monster.feed(x)
+worker_pids = (0...4).map do |i|
+  fork do
+    DCell.start id: "w#{i}", addr: "tcp://127.0.0.1:900#{i}"
+    Worker.supervise_as "worker#{i}"
+    sleep
+  end
 end
-monster.finish</code></pre>
-
-<p><a href="http://github.com/engineyard/multi_headed_greek_monster"><code>github.com/engineyard/multi_headed_greek_monster</code></a></p>
+sleep 1 #wait for workers to start
+DCell.start id: "main", addr: "tcp://127.0.0.1:9011"
+futures = (0..50).map do |x|
+  i = x % 4
+  DCell::Node["w#{i}"]["worker#{i}"].future.work(x)
+end
+futures.map(&amp;:value)
+worker_pids.each{|pid| Process.kill("KILL", pid)}</code></pre>
 </div>
 </div>
 </body></html><html><body>
@@ -1150,7 +1159,7 @@ end</code></pre>
 
 <ul>
 <li>Run-models</li>
-<li>Inter-Worker Communication</li>
+<li>Inter-Worker Communication (Callbacks, Futures)</li>
 <li>?</li>
 </ul>
 </div>
@@ -1174,16 +1183,22 @@ end</code></pre>
 
 <ul>
 <li>Idempotence (retriable jobs)</li>
+<li>Redis locks (with expire)</li>
+<li><code>Resque.inline = true</code></li>
 <li>Error Tracking (<code>rollbar.com</code>)</li>
-<li>Model jobs as ActiveRecord objects (persist to DB)</li>
-<li>Be Paranoid</li>
 </ul>
 </div>
 </div>
 </body></html><html><body>
-<div style="background: url('file/./images/conflict.jpg') center no-repeat;" class="slide" data-transition="none">
-<div class="content" ref="./slides/67">
-<h3>Conflicting Goals</h3>
+<div class="slide" data-transition="none">
+<div class="content bullets incremental bulletsbigger" ref="./slides/67">
+<h3>"Best Practices" cont.</h3>
+
+<ul>
+<li>Model jobs as ActiveRecord objects (persist to DB)</li>
+<li>Pass Request IDs</li>
+<li>Be Paranoid</li>
+</ul>
 </div>
 </div>
 </body></html><html><body>
@@ -1200,7 +1215,7 @@ end</code></pre>
 </div>
 </body></html><html><body>
 <div class="slide" data-transition="none">
-<div class="content bullets incremental bulletsbigger" ref="./slides/70">
+<div class="content bullets bulletsbigger" ref="./slides/70">
 <h3>TODO</h3>
 
 <ul>
@@ -1218,11 +1233,11 @@ end</code></pre>
 
 <p><br><br><br><br>
 <br><br><br><br>
-<br><br><br><br><br></p>
+<br><br><br><br></p>
 
 <h2><a href="http://twitter.com/beanstalksurf">@beanstalksurf</a></h2>
 
-<h2><a href="http://jacobo.github.com/talks"><code>jacobo.github.com/talks</code></a></h2>
+<h1><a href="http://jacobo.github.com/talks"><code>jacobo.github.com/talks</code></a></h1>
 </div>
 </div>
 </body></html></div>
