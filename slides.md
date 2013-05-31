@@ -861,7 +861,7 @@
 ### Better Tools!
 
 * Run-models
-* Inter-Worker Communication (Callbacks, Futures)
+* Inter-Worker Communication
 * ?
 
 !SLIDE multiimage
